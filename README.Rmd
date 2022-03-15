@@ -1,11 +1,11 @@
 ---
-title: "Repo Template"
+title: "Exploring Marketing Term Usage in Earnings Calls"
 output: github_document
 ---
 
 ## Abstract
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+When do companies invoke marketing and advertising in earnings calls? Using a vast dataset of earnings calls reports, we employ a number of natural language processing techniques to explore the use of marketing and advertising terms and their association with firm performance.
 
 ## Project Organization
 
