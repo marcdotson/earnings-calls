@@ -1,0 +1,15 @@
+# R
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Apple
+.DS_Store
+
+# Folders
+Output/*
+Private/*
+
+# Files
+*.pdf

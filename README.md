@@ -1,0 +1,27 @@
+Repo Template
+================
+
+## Abstract
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
+commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
+velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
+occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+mollit anim id est laborum.
+
+## Project Organization
+
+  - `/Code` Scripts with prefixes (e.g., `01_import-data.R`,
+    `02_clean-data.R`) and functions in `/Source`.
+  - `/Data` Simulated and real data, the latter not pushed.
+  - `/Figures` PNG images and plots.
+  - `/Output` Output from model runs, not pushed.
+  - `/Presentation` Presentation slides, without its knitted PDF pushed.
+  - `/Private` A catch-all folder for miscellaneous files, not pushed.
+  - `/Writing` Case studies and the paper, without its knitted PDF
+    pushed.
+
+For general details on collaborating using GitHub see [Research
+Assistant Training](https://github.com/marcdotson/ra-training).
