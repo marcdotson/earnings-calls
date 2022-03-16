@@ -12,4 +12,5 @@ Output/*
 Private/*
 
 # Files
+*.txt
 *.pdf
