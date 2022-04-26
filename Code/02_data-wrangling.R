@@ -1,17 +1,11 @@
 # Load packages
 library(tidyverse)
 library(tidytext)
-library(textdata)
-library(topicmodels)
-library(dbplyr)
-library(DBI)
+# library(textdata)
+# library(topicmodels)
+# library(dbplyr)
+# library(DBI)
 library(lubridate)
-
-text <- read_lines(here::here("Data", "001111_1-28-2004._Q3 2004 Activision Earnings Conference Call.txt"))
-
-# This RScript is for cleaning/manipulating the text data; I'm not sure if we
-# actually want to keep it separate from the data import. 
-
 
 
 #Notes on packages:
