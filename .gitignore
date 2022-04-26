@@ -8,9 +8,7 @@
 .DS_Store
 
 # Folders
-Data/*.txt
-Data/*.csv
-Data/*.rds
+Data/*
 Output/*
 Private/*
 
