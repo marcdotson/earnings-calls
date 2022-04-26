@@ -87,7 +87,15 @@ earnings_call_wrangler <- function(x) {
   for(i in 1:length(y)) {
     file_name <- y[[i]] # storing file name
     file_imp <- tbl(x, file_name) %>% collect() # importing from database
-    
+    text_tibble <- tibble(file_imp=text)
+    info_tibble <- tibble(
+      Company = str_sub(text_tibble[1,1], start = 23L, end = str_locate(text_tibble[1,1], " Earnings")[1,1]) %>% str_trim(),
+      Quarter = str_sub(text_tibble[1,1],start = 16L, end = 16L),
+      Year = str_sub(text_tibble[1,1],start = 18L, end = 21L),
+      Word_Count = str_sub(text_tibble[2,1], start = 15L, end = -7L),
+      Date = dmy(str_sub(text_tibble[3,1], start=15L, end =-1L)) 
+    )  %>% separate(Date, into=c("Year", "Month", "Day"), sep = "-")
+    summary_tib %>% bind_rows(info_tibble)
   }
   
 }
