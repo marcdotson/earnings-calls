@@ -14,7 +14,7 @@ call_data <- readtext::readtext(here::here("Data", "*.txt")) %>%
 
 # There are a number of duplicate earnings calls as well as
 # transcripts for events between quarterly earnings calls. It may
-# not be worth trying to filter down to a single earngings call 
+# not be worth trying to filter down to a single earnings call 
 # per quarter.
 
 # Investigate duplicate earnings calls.
@@ -60,6 +60,11 @@ firm_data
 # The challenge in joining the call_data and firm_data is that
 # the quarter in which the earnings call (or other transcript) is
 # made doesn't match the quarterly revenue exactly.
+
+# - Are they required to have the earnings call within a certain time
+# after the quarter ends?
+# - Check to see if they always have the earnings call in the quarter
+# following?
 
 # Join the earnings calls and firm performance data.
 joint_data <- call_data %>% 
