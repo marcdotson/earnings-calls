@@ -12,7 +12,7 @@ and advertising terms and their association with firm performance.
 
 -   `/Code` Scripts with prefixes (e.g., `01_import-data.R`,
     `02_clean-data.R`) and functions in `/Source`.
--   `/Data` Simulated and real data, the latter not pushed.
+-   `/Data` Real data, not pushed.
 -   `/Figures` PNG images and plots.
 -   `/Output` Output from model runs, not pushed.
 -   `/Presentation` Presentation slides, without its knitted PDF pushed.
