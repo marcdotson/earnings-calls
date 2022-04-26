@@ -8,9 +8,10 @@
 .DS_Store
 
 # Folders
+Data/*.txt
+Data/*.csv
 Output/*
 Private/*
 
 # Files
-*.txt
 *.pdf
