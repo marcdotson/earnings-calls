@@ -2,6 +2,9 @@
 # Load libraries.
 library(tidyverse)
 
+# Issue with readtext() concatening words at the end and beginning
+# of lines in the earnings class. read_lines() might work instead.
+
 # Import all .txt files in Data.
 call_data <- readtext::readtext(here::here("Data", "*.txt")) %>% 
   tibble() %>% 
