@@ -6,7 +6,7 @@ library(tidytext)
 library(widyr)
 library(furrr)
 library(irlba)
-
+library(stopwords)
 
 # Read data.
 call_data <- read_rds(here::here("Data", "call_data.rds"))
@@ -42,6 +42,13 @@ word_tokens <- call_data %>%
 
 # Import LM Stopword lists, generic is contained within generic_long
 
+# Need to deal with contractions ('ll, 've, 't, 's, 'd, 're)
+# I'll just remove them for now
+cont <- list("ll", "ve", "t", "s", "d", "re")
+
+word_tokens <- word_tokens %>% filter(!(word %in% cont))
+
+
 sw_auditor <- read_csv(here::here("Data", "stopwords_lm_auditor.csv"))
 # sw_currency <- read_csv(here::here("Data", "stopwords_lm_currency.csv"))
 sw_dates_numbers <- read_csv(here::here("Data", "stopwords_lm_dates_numbers.csv"))
@@ -61,18 +68,34 @@ word_tokens_lm <- word_tokens %>% anti_join(lm_stopwords)
 # Tidytext stop words
 word_tokens_tt <- word_tokens %>% anti_join(stop_words)
 
-# Both lists
-word_tokens_both <- word_tokens_lm  %>% anti_join(stop_words)
+# SMART, Snowball, and onix are all included within Tidytext, thorough
+# review should be done of each to see which we should include. The 
+# Loughran McDonald stopword list will probably be the best, as it is domain
+# specific. The `stopwords` package has SMART and Snowball, as well as ISO
 
+# Snowball
+word_tokens_snowball <- word_tokens %>%
+  filter(!(word %in% stopwords(source = "snowball")))
 
-wordcount <- word_tokens_both %>% count(word, sort= TRUE)
+# SMART
+word_tokens_smart <- word_tokens %>%
+  filter(!(word %in% stopwords(source = "smart")))
 
-# Need to deal with contractions ('ll, 've, 't, 's, 'd)
-# I'll just remove them for now
+# ISO
+word_tokens_iso <- word_tokens %>%
+  filter(!(word %in% stopwords(source = "stopwords-iso")))
 
-cont <- list("ll", "ve", "t", "s", "d")
+# onix
+onix <- stop_words %>% filter(lexicon == "onix") %>% select(word)
 
-word_tokens_both <- word_tokens_both %>% filter(!(word %in% cont))
+word_tokens_onix <- word_tokens %>%
+  anti_join(onix)
+
+# All lists
+word_tokens_all <- word_tokens_lm  %>% 
+  anti_join(stop_words) %>% 
+  filter(!(word %in% stopwords(source = "stopwords-iso")))
+
 
 # Stemming ----------------------------------------------------------------
 
@@ -94,16 +117,14 @@ stem_tokens_hunspell <- word_tokens_both %>%
 # Word embeddings seem to occupy a space somewhere between data wrangling and
 # modeling. They are computationally intensive and require a fair bit of
 # judgment. The process used to make word embeddings is outlined in SMLTA
-# I won't use the stemmed words for this, unless I find a compelling reason to
+# I won't use the stemmed words for this, unless I find a compelling reason to.
+# No stopwords removed, contractions are gone though
 
-# Add counts, filter by 10 or up 
-word_tokens_both <- word_tokens_both %>% 
+# Add counts, filter by 10 or up, nest words 
+nested_words <- word_tokens %>% 
   add_count(word) %>%
   filter(n >= 10) %>%
-  select(-n)
-
-# Nest the words
-nested_words <- word_tokens_both %>%
+  select(-n) %>%
   nest(words = c(word))
 
 # Creating slide windows, which are used to calculate skipgram probabilities
@@ -177,14 +198,14 @@ nearest_neighbors(tidy_word_vectors, "q1")
 
 
 # Document embeddings
-
-word_matrix <- word_tokens_both %>%
-  count(title, word) %>%
-  cast_sparse(title, word, n)
-
-embedding_matrix <- tidy_word_vectors %>%
-  cast_sparse(item1, dimension, value)
-
-doc_matrix <- word_matrix %*% embedding_matrix
-
-dim(doc_matrix)
+# Incorrect dimensions when not filtering stopwords
+# word_matrix <- word_tokens %>%
+#   count(title, word) %>%
+#   cast_sparse(title, word, n)
+# 
+# embedding_matrix <- tidy_word_vectors %>%
+#   cast_sparse(item1, dimension, value)
+# 
+# doc_matrix <- word_matrix %*% embedding_matrix
+# 
+# dim(doc_matrix)
