@@ -2,14 +2,12 @@
 # Load libraries.
 library(tidyverse)
 
-# Issue with readtext() concatening words at the end and beginning
-# of lines in the earnings class. read_lines() might work instead.
-
 # Import all .txt files in Data.
 call_data <- readtext::readtext(here::here("Data", "*.txt")) %>% 
   tibble() %>% 
   separate(doc_id, into = c("gvkey", "date", "title"), sep = "_") %>% 
   mutate(
+    text = str_replace_all(text, "\r?\n|\r", " "),
     date = lubridate::mdy(date),
     year = lubridate::year(date),
     quarter = lubridate::quarter(date)
