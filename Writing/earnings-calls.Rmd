@@ -18,9 +18,9 @@ output:
     keep_tex: true
     template: mktg-article.tex
     citation_package: natbib
-params:
-  data_path: "../Data/ad_data.rds"
-  data_name: "Advertising Data"
+# params:
+#   data_path: "../Data/ad_data.rds"
+#   data_name: "Advertising Data"
 ---
 
 ```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
@@ -37,6 +37,16 @@ data <- readRDS(params$data_path)
 We can can include regular single-paper citations using `[@author:year]` like [@Allenby:1998] or multiple-paper citations using `[@author:year; @author:year]` like [@Allenby:1998; @Watanabe:2010], in-line citations using `@author:year` like @Allenby:1998, or citations without the Author using `[-@author:year]` like [-@Allenby:1998].
 
 Each section and sub-section can be referenced using an automatically generated label using `\@ref(section-name)`. For example, we can reference the Model Specification section using `\@ref(model-specification)` as Section \@ref(model-specification).
+
+# Data
+
+## Earnings Calls
+
+Marc to describe the earnings calls data here...
+
+## Dictionary
+
+William to describe the dictionary here...
 
 # Model Specification
 
@@ -72,20 +82,20 @@ knitr::include_graphics("../Figures/fig1.png")
 # Results
 
 ```{r echo=FALSE}
-click_prop <- data %>% 
-  mutate(click_lvls = as.factor(click)) %>% 
-  count(click_lvls) %>% 
-  pivot_wider(names_from = click_lvls, values_from = n) %>% 
-  mutate(click_prop = Yes/(No + Yes)) %>% 
-  pull(click_prop)
+# click_prop <- data %>% 
+#   mutate(click_lvls = as.factor(click)) %>% 
+#   count(click_lvls) %>% 
+#   pivot_wider(names_from = click_lvls, values_from = n) %>% 
+#   mutate(click_prop = Yes/(No + Yes)) %>% 
+#   pull(click_prop)
 ```
 
-Our tables and figures can be dynamic. In the YAML, we can include parameters under `params`. We've already imported data specified as a parameter, an `r params$data_name` example (the name itself being a parameter as well). We can use that data to produce dynamic results in tables or in-line, like `r round(click_prop * 100, 2)`% of click-through in the `r params$data_name`, and dynamic figures -- all updated with whatever new data or other parameters we set. As before, the name of the code chunk is the label that can be referenced, like Figure \@ref(fig:bar-plot).
+<!-- Our tables and figures can be dynamic. In the YAML, we can include parameters under `params`. We've already imported data specified as a parameter, an `r params$data_name` example (the name itself being a parameter as well). We can use that data to produce dynamic results in tables or in-line, like `r round(click_prop * 100, 2)`% of click-through in the `r params$data_name`, and dynamic figures -- all updated with whatever new data or other parameters we set. As before, the name of the code chunk is the label that can be referenced, like Figure \@ref(fig:bar-plot). -->
 
 ```{r bar-plot, echo=FALSE, fig.cap="A bar plot.", fig.align="center", fig.pos="H"}
-data %>% 
-  ggplot(aes(x = design, fill = click)) +
-  geom_bar()
+# data %>% 
+#   ggplot(aes(x = design, fill = click)) +
+#   geom_bar()
 ```
 
 # Conclusion
