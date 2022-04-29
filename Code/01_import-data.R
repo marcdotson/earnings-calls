@@ -84,12 +84,12 @@ firm_data
 
 # Join Data ---------------------------------------------------------------
 # Join the earnings calls and firm performance data.
-data <- call_data %>% 
+call_data <- call_data %>% 
   inner_join(firm_data, by = c("gvkey", "year", "quarter")) %>% 
   select(gvkey, call_date, year, quarter, revenue, title, text)
 
-data
+call_data
 
 # Write data.
-write_rds(data, here::here("Data", "data.rds"))
+write_rds(call_data, here::here("Data", "call_data.rds"))
 
