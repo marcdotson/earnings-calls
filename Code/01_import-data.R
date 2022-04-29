@@ -2,48 +2,73 @@
 # Load libraries.
 library(tidyverse)
 
+# Confirm that we can filter on no "quarter" in title. So far, only 
+# transcripts that aren't quarterly earnings calls don't have some
+# reference to quarter in their titles.
+readtext::readtext(here::here("Data", "*.txt")) %>%
+  tibble() %>%
+  separate(doc_id, into = c("gvkey", "call_date", "title"), sep = "_") %>%
+  mutate(quarter = str_extract(title, "Q\\d|(\\w+)(?=\\sQuarter)")) %>% 
+  filter(is.na(quarter)) %>%
+  select(title, quarter) %>%
+  as.data.frame()
+
 # Import all .txt files in Data.
 call_data <- readtext::readtext(here::here("Data", "*.txt")) %>% 
   tibble() %>% 
-  separate(doc_id, into = c("gvkey", "date", "title"), sep = "_") %>% 
+  separate(doc_id, into = c("gvkey", "call_date", "title"), sep = "_") %>% 
   mutate(
-    text = str_replace_all(text, "\r?\n|\r", " "),
-    date = lubridate::mdy(date),
-    year = lubridate::year(date),
-    quarter = lubridate::quarter(date)
-  )
-
-# There are a number of duplicate earnings calls as well as
-# transcripts for events between quarterly earnings calls. It may
-# not be worth trying to filter down to a single earnings call 
-# per quarter.
-
-# Investigate duplicate earnings calls.
-call_data %>% 
-  count(gvkey, date) %>% 
-  filter(n != 1) %>% 
-  left_join(call_data, by = c("gvkey", "date"))
-
-# call_data %>% 
-#   mutate_if(is.character, ~gsub('[^ -~]', '', .)) %>%
-#   filter(!grepl("Abstract|Event Brief", title)) %>% 
-#   count(gvkey, date) %>% 
-#   filter(n != 1) %>% 
-#   left_join(call_data, by = c("gvkey", "date"))
-
-# Remove repeat earnings calls and non-UTF-8 characters.
-call_data <- call_data %>% 
+    # Extract year and quarter from the title and remove carriage returns.
+    call_date = lubridate::mdy(call_date),
+    year = str_extract(title, "20\\d\\d|(?<=Q\\d\\s)(\\d\\d)|(?<=FY\\s)(\\d\\d)"),
+    quarter = str_extract(title, "Q\\d|(\\w+)(?=\\sQuarter)"),
+    text = str_replace_all(text, "\r?\n|\r", " ")
+  ) %>% 
+  # Filter on no "quarter" along with "Abstract|Event Brief" in title.
+  drop_na(quarter) %>%
+  filter(!grepl("Abstract|Event Brief", title)) %>% 
+  # Remove non-UTF-8 characters.
   mutate_if(is.character, ~gsub('[^ -~]', '', .)) %>%
-  filter(!grepl("Abstract|Event Brief", title))
+  mutate(
+    # Use the call_date for year if it isn't present in the title.
+    year = ifelse(is.na(year), lubridate::year(call_date), year),
+    # Clean up year and quarter.
+    year = str_pad(year, 3, side = c("left"), pad = "0"),
+    year = str_pad(year, 4, side = c("left"), pad = "2"),
+    year = as.numeric(year),
+    quarter = str_replace_all(quarter, "Q", ""),
+    quarter = str_replace_all(quarter, "(F|f)irst", "1"),
+    quarter = str_replace_all(quarter, "(S|s)econ", "2"),
+    quarter = str_replace_all(quarter, "(T|t)hird", "3"),
+    quarter = str_replace_all(quarter, "(F|f)ourth", "4"),
+    quarter = as.numeric(quarter)
+  )
+  # filter(!is.na(quarter)) %>%
+  # select(title, call_date, year, quarter) %>%
+  # as.data.frame()
+  # # write_csv(here::here("Private", "test.csv"))
+
+# Confirm that we can filter on "Abstract|Event Brief" in title to 
+# remove most duplicate earnings calls.
+call_data %>% 
+  count(gvkey, call_date) %>%
+  filter(n != 1) %>%
+  left_join(call_data, by = c("gvkey", "call_date")) %>% 
+  select(gvkey, call_date, title) %>% 
+  as.data.frame()
 
 call_data
 
 # Firm Performance --------------------------------------------------------
-# Assuming earnings calls don't start before 2000.
+# Does the assumption of 2000 being the earliest earnings call hold?
+call_data %>% arrange(call_date)
 
 # Create a plain text file (.txt) with one GVKEY code per line
-# so we can get the firm performance for each firm by quarter
-# from 2000 to the present as a CSV all at once.
+# for pulling quarterly revenue data from Computstat.
+call_data %>% 
+  count(gvkey) %>% 
+  select(gvkey) %>% 
+  write_tsv(here::here("Private", "Compustat GVKEYs.txt"), col_names = FALSE)
 
 # Import Compustat fundamentals quarterly.
 firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")) %>% 
@@ -58,21 +83,13 @@ firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")
 firm_data
 
 # Join Data ---------------------------------------------------------------
-# The challenge in joining the call_data and firm_data is that
-# the quarter in which the earnings call (or other transcript) is
-# made doesn't match the quarterly revenue exactly.
-
-# - Are they required to have the earnings call within a certain time
-# after the quarter ends?
-# - Check to see if they always have the earnings call in the quarter
-# following?
-
 # Join the earnings calls and firm performance data.
-joint_data <- call_data %>% 
+data <- call_data %>% 
   inner_join(firm_data, by = c("gvkey", "year", "quarter")) %>% 
-  select(gvkey, date, year, quarter, revenue, title, text)
+  select(gvkey, call_date, year, quarter, revenue, title, text)
+
+data
 
 # Write data.
-write_rds(call_data, here::here("Data", "call_data.rds"))
-write_rds(joint_data, here::here("Data", "joint_data.rds"))
+write_rds(data, here::here("Data", "data.rds"))
 
