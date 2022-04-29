@@ -7,6 +7,7 @@ library(widyr)
 library(furrr)
 library(irlba)
 library(stopwords)
+library(edgar)
 
 # Read data.
 call_data <- read_rds(here::here("Data", "call_data.rds"))
@@ -29,11 +30,22 @@ joint_data <- read_rds(here::here("Data", "joint_data.rds"))
 # - Documents defined by earnings call or year/quarter or year.
 # - Keep all the group information as you tokenize.
 
-# Los Tokens
+# Tokens
+
+# Need to deal with contractions ('ll, 've, 't, 's, 'd, 're)
+# Replaced contractions with proper words, may need to add more in the future
+# cont <- list("ll", "ve", "t", "s", "d", "re")
+# 'd can be had or would
 
 word_tokens <- call_data %>%
   mutate(text= str_replace_all(text, "\\.", " ")) %>%
   mutate(text= str_replace_all(text, "\\b", " ")) %>%
+  mutate(text= str_replace_all(text, "'ll", " will")) %>% 
+  mutate(text= str_replace_all(text, "'ve", " have")) %>% 
+  mutate(text= str_replace_all(text, "'t", " not")) %>% 
+  mutate(text= str_replace_all(text, "'d", " had")) %>% 
+  mutate(text= str_replace_all(text, "'s", " is")) %>% 
+  mutate(text= str_replace_all(text, "'re", " are")) %>% 
   unnest_tokens(word, text, token = "words")
 
 # Remove Stop Words -------------------------------------------------------
@@ -41,13 +53,6 @@ word_tokens <- call_data %>%
 # - specialized stopwords .txt file provided by the dictionary authors.
 
 # Import LM Stopword lists, generic is contained within generic_long
-
-# Need to deal with contractions ('ll, 've, 't, 's, 'd, 're)
-# I'll just remove them for now
-cont <- list("ll", "ve", "t", "s", "d", "re")
-
-word_tokens <- word_tokens %>% filter(!(word %in% cont))
-
 
 sw_auditor <- read_csv(here::here("Data", "stopwords_lm_auditor.csv"))
 # sw_currency <- read_csv(here::here("Data", "stopwords_lm_currency.csv"))
@@ -95,6 +100,29 @@ word_tokens_onix <- word_tokens %>%
 word_tokens_all <- word_tokens_lm  %>% 
   anti_join(stop_words) %>% 
   filter(!(word %in% stopwords(source = "stopwords-iso")))
+
+
+
+# Business/Marketing Dictionary -------------------------------------------
+
+# edgar package has the LM dictionary, which is a good place to start
+# Column values indicate the years words were added to the list
+data(LMMasterDictionary)
+LM <- as_tibble(LMMasterDictionary)
+
+
+# Mutate to binary
+LM_binary <- LM %>%
+  mutate(negative = if_else(negative != 0, 1, 0),
+         positive = if_else(positive != 0, 1, 0),
+         uncertainty = if_else(uncertainty != 0, 1, 0),
+         litigious = if_else(litigious != 0, 1, 0),
+         strong_modal = if_else(modal != 1, 0, 1),
+         moderate_modal = if_else(modal != 2, 0, 1),
+         weak_modal = if_else(modal != 3, 0, 1)) %>%
+  select(word, negative, positive, uncertainty, litigious, strong_modal,
+         moderate_modal, weak_modal)
+
 
 
 # Stemming ----------------------------------------------------------------
@@ -158,22 +186,24 @@ plan(multisession)  ## for parallel processing
 # Not exactly sure how to explain what I'm doing with this, which isn't great
 # 8L for 8 cores! Didn't take long to run though, even if you have 4 cores
 
-tidy_pmi <- nested_words %>%
-  mutate(words = future_map(words, slide_windows, 8L)) %>%
-  unnest(words) %>%
-  unite(window_id, title, window_id) %>%
-  pairwise_pmi(word, window_id)
+# COmmenting out for now, will revisit later
+
+# tidy_pmi <- nested_words %>%
+#   mutate(words = future_map(words, slide_windows, 8L)) %>%
+#   unnest(words) %>%
+#   unite(window_id, title, window_id) %>%
+#   pairwise_pmi(word, window_id)
 
 
 # Creating the vectors
 
-tidy_word_vectors <- tidy_pmi %>%
-  widely_svd(
-    item1, item2, pmi,
-    nv = 100, maxit = 1000
-  )
-
-# Hurray!
+# tidy_word_vectors <- tidy_pmi %>%
+#   widely_svd(
+#     item1, item2, pmi,
+#     nv = 100, maxit = 1000
+#   )
+# 
+# # Hurray!
 
 
 # Function from SMLTA to find the nearest neighbor of words
@@ -194,7 +224,7 @@ nearest_neighbors <- function(df, token) {
 }
 
 
-nearest_neighbors(tidy_word_vectors, "q1")
+# nearest_neighbors(tidy_word_vectors, "q1")
 
 
 # Document embeddings
