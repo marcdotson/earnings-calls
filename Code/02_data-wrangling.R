@@ -38,15 +38,17 @@ joint_data <- read_rds(here::here("Data", "joint_data.rds"))
 # 'd can be had or would
 
 word_tokens <- call_data %>%
-  mutate(text= str_replace_all(text, "\\.", " ")) %>%
-  mutate(text= str_replace_all(text, "\\b", " ")) %>%
-  mutate(text= str_replace_all(text, "'ll", " will")) %>% 
-  mutate(text= str_replace_all(text, "'ve", " have")) %>% 
-  mutate(text= str_replace_all(text, "'t", " not")) %>% 
-  mutate(text= str_replace_all(text, "'d", " had")) %>% 
-  mutate(text= str_replace_all(text, "'s", " is")) %>% 
-  mutate(text= str_replace_all(text, "'re", " are")) %>% 
-  unnest_tokens(word, text, token = "words")
+  mutate(text = str_replace_all(text, "\\.", " ")) %>%
+  mutate(text = str_replace_all(text, "\\b", " ")) %>%
+  mutate(text = str_replace_all(text, "(?<=')ll", " will")) %>%
+  mutate(text = str_replace_all(text, "(?<=')ve ", "have")) %>%
+  mutate(text = str_replace_all(text, "(?<=')t ", " not")) %>%
+  mutate(text = str_replace_all(text, "(?<=')d ", " had")) %>%
+  mutate(text = str_replace_all(text, "(?<=')s ", " is")) %>%
+  mutate(text = str_replace_all(text, "(?<=')re ", " are")) %>%
+  unnest_tokens(word, text, token = "words") %>% 
+  mutate(word = if_else(word == "ve", "have", word)) %>% 
+  mutate(word = if_else(word == "ll", "will", word))
 
 # Remove Stop Words -------------------------------------------------------
 # - stopwords data frame needs to be looked at in tidytext.
@@ -62,13 +64,13 @@ sw_generic_long <- read_csv(here::here("Data", "stopwords_lm_generic_long.csv"))
 sw_geography <- read_csv(here::here("Data", "stopwords_lm_geography.csv"))
 sw_names <- read_csv(here::here("Data", "stopwords_lm_names.csv"))
 
-lm_stopwords <- sw_auditor %>% 
+lm_stopwords_list <- sw_auditor %>% 
   bind_rows(sw_dates_numbers, sw_generic_long, sw_geography, sw_names) %>% 
   mutate(word= str_to_lower(word))
   
 
 # Loughran McDonald stop words
-word_tokens_lm <- word_tokens %>% anti_join(lm_stopwords)
+word_tokens_lm <- word_tokens %>% anti_join(lm_stopwords_list)
 
 # Tidytext stop words
 word_tokens_tt <- word_tokens %>% anti_join(stop_words)

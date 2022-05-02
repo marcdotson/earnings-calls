@@ -6,56 +6,56 @@
 
 # No stop words
 no_stopwords <- word_tokens %>%
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "no stopwords")
 
 # Loughran McDonald stop words
 lm_stopwords <- word_tokens_lm %>% 
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "lm")
 
 # Tidytext stop words (SMART, Snowball, ISO)
 tidytext_stopwords <- word_tokens_tt %>% 
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "tidytext")
 
 # SMART stop words
 smart_stopwords <- word_tokens_smart %>% 
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "smart")
 
 # Snowball stop words
 snowball_stopwords <- word_tokens_snowball %>% 
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "snowball")
 
 # ISO stop words
 iso_stopwords <- word_tokens_iso %>% 
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "iso")
 
 # onix stop words
 onix_stopwords <- word_tokens_onix %>% 
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "onix")
 
 # All stop word lexicons
 all_stopwords <- word_tokens_all %>% 
-  group_by(year, quarter) %>% 
+  group_by(year) %>% 
   count(word) %>% 
   arrange(desc(n)) %>% 
   mutate(stopwords = "all")
@@ -87,13 +87,24 @@ word_tot %>%
   slice(1:30) %>% 
   mutate(word = fct_reorder(word, totals)) %>%
   ggplot(aes(x = totals, y = word)) +
-  geom_col()
+  geom_col() 
   
 
 
 
 
 # Overall word count by year.
+
+lm_stopwords %>% 
+  group_by(year) %>% 
+  slice(1:10) %>% 
+  ungroup %>% 
+  mutate(word = reorder_within(word, n, year)) %>%
+  ggplot(aes(x = n, y = word)) +
+  geom_col() +
+  facet_wrap(~ year, scales="free") +
+  scale_y_reordered()
+
 
 # Word embeddings visualizations or as part of modeling?
 
