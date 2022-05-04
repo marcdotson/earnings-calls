@@ -104,6 +104,83 @@ word_tokens_all <- word_tokens_lm  %>%
   filter(!(word %in% stopwords(source = "stopwords-iso")))
 
 
+# Word counts after filtering with different stop word lexicons
+
+# No stop words
+no_stopwords <- word_tokens %>%
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "No stop words")
+
+# Loughran McDonald stop words
+lm_stopwords <- word_tokens_lm %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "Loughran McDonald")
+
+# Tidytext stop words (SMART, Snowball, ISO)
+tidytext_stopwords <- word_tokens_tt %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "tidytext")
+
+# SMART stop words
+smart_stopwords <- word_tokens_smart %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "SMART")
+
+# Snowball stop words
+snowball_stopwords <- word_tokens_snowball %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "Snowball")
+
+# ISO stop words
+iso_stopwords <- word_tokens_iso %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "ISO")
+
+# onix stop words
+onix_stopwords <- word_tokens_onix %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "onix")
+
+# All stop word lexicons
+all_stopwords <- word_tokens_all %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "All stop word lexicons")
+
+# Binding previous data frames, grouped by year and quarter
+word_counts <- no_stopwords %>% 
+  bind_rows(tidytext_stopwords,
+            lm_stopwords,
+            smart_stopwords,
+            iso_stopwords,
+            snowball_stopwords,
+            onix_stopwords,
+            all_stopwords)
+
+write_csv(word_counts, here::here("Data", "word_counts.csv"))
+
+# Word totals, grouped by word/stop word
+word_tot <- word_counts %>%
+  ungroup() %>% 
+  select(word, n, stopwords) %>% 
+  group_by(word, stopwords) %>% 
+  summarise(totals = sum(n))
+
 
 # Business/Marketing Dictionary -------------------------------------------
 
@@ -122,11 +199,32 @@ LM_binary <- LM %>%
          strong_modal = if_else(modal != 1, 0, 1),
          moderate_modal = if_else(modal != 2, 0, 1),
          weak_modal = if_else(modal != 3, 0, 1)) %>%
-  select(word, negative, positive, uncertainty, litigious, strong_modal,
-         moderate_modal, weak_modal)
+  select(word, negative, positive) #, uncertainty, litigious, strong_modal,
+     #    moderate_modal, weak_modal)
+
+# Revenue and sentiment for Apple, not scalable at the moment. Sentiment
+# is the number of positive terms subtracted from negative, so some information
+# is lost here. LM tokens were used to match the sentiment list
+revenue_sentiment <- word_tokens_lm %>% 
+  group_by(year, quarter) %>% 
+  left_join(LM_binary, by = "word") %>% 
+  mutate(negative = replace_na(negative, 0),
+         positive = replace_na(positive, 0)) %>% 
+  summarise(revenue=revenue,
+            sentiment_difference = (sum(positive)-sum(negative))) %>% 
+  distinct() %>% 
+  ungroup %>% 
+  mutate(period = row_number()) #unsure how to do this exactly, will fix later
 
 
+write_csv(revenue_sentiment, here::here("Data", "revenue_sentiment_apple.csv") )
 
+
+revenue_sentiment %>% 
+  ggplot(aes(x = period, y = sentiment_difference)) +
+  geom_col()
+  
+  
 # Stemming ----------------------------------------------------------------
 
 # SMLTA Book isn't a big proponent of stemming and offers some published
