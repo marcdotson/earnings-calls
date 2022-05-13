@@ -62,7 +62,202 @@ sw_dates_numbers <- read_csv(here::here("Data", "stopwords_lm_dates_numbers.csv"
 sw_generic_long <- read_csv(here::here("Data", "stopwords_lm_generic_long.csv"))
 # sw_generic <- read_csv(here::here("Data", "stopwords_lm_generic.csv"))
 sw_geography <- read_csv(here::here("Data", "stopwords_lm_geography.csv"))
-sw_names <- read_csv(here::here("Data", "stopwords_lm_names.csv"))
+sw_names <- read_csv(here::here("Data", "stopwords_lm_names.csv")) %>% 
+  distinct() %>% 
+  filter(word != "SALE" |
+         word != "SALES" |
+         word != "APPLE" |
+         word != "BANE" |
+         word != "BATTLE" |
+         word != "BATTLES" |
+         word != "BEER" |
+         word != "BEERS" |
+         word != "BEST" |
+         word != "BIAS" |
+         word != "BLAND" |
+         word != "BLANK" |
+         word != "BLISS" |
+         word != "BLIZZARD" |
+         word != "BLOCK" |
+         word != "BLOOM" |
+         word != "BLOSSOM" |
+         word != "BLOW" |
+         word != "BLUNT" |
+         word != "BOARD" |
+         word != "BODE" |
+         word != "BOSS" |
+         word != "BOTTOMS" |
+         word != "BOX" |
+         word != "BRAND" |
+         word != "BRANCH" |
+         word != "BRINK" |
+         word != "BUTTON" |
+         word != "BURGER" |
+         word != "CALL" |
+         word != "CANDY" |
+         word != "CARD" | 
+         word != "CARRY" |
+           word != "CASE" |
+           word != "BRINK" |
+           word != "COFFEE" |
+           word != "CONSTANT" |
+           word != "CASH" |
+           word != "CHAMPION" |
+           word != "CHANCE" |
+           word != "CHARITY" |
+           word != "CHASE" |
+           word != "CHRISTMAS" |
+           word != "CLICK" |
+           word != "CLOSE" |
+           word != "CLOUD" |
+           word != "COATS" |
+           word != "COFFEE" |
+           word != "COFFIN" |
+           word != "COOL" |
+           word != "COPE" |
+           word != "CORE" |
+           word != "COTTON" |
+           word != "COUCH" |
+           word != "COVER" |
+           word != "CONSTANT" |
+           word != "CRYSTAL" |
+           word != "DAY" |
+           word != "DEAL" |
+           word != "DENT" |
+           word != "DO" |
+           word != "DOLLAR" |
+           word != "DOT" |
+           word != "DOVE" |
+           word != "DRAIN" |
+           word != "DRUM" |
+           word != "EASTER" |
+           word != "FAIR" |
+           word != "FAST" |
+           word != "FIELD" |
+           word != "FINE" |
+           word != "FISH" |
+           word != "FIX" |
+           word != "FORTUNE" |
+           word != "FRAME" |
+           word != "FREE" |
+           word != "FREED" |
+           word != "FRIES" |
+           word != "FRIEND" |
+           word != "FRY" |
+           word != "GAMBLE" |
+           word != "GOLD" |
+           word != "GOLDEN" |
+           word != "GOOD" |
+           word != "GREEN" |
+           word != "GRIM" |
+           word != "GROSS" |
+           word != "GUESS" |
+           word != "HAIR" |
+           word != "HAND" |
+           word != "HANG" |
+           word != "HARDER" |
+           word != "HARNESS" |
+           word != "HARMS" |
+           word != "HASTY" |
+           word != "HEAD" |
+           word != "HEARD" |
+           word != "HIGH" |
+           word != "HOLDER" |
+           word != "HONEY" |
+           word != "HOPE" |
+           word != "HOUSE" |
+           word != "HOOK" |
+           word != "JOY" |
+           word != "JUST" |
+           word != "KEY" |
+           word != "KEYS" |
+           word != "KIT" |
+           word != "LAND" |
+           word != "LARGE" |
+           word != "LAW" |
+           word != "LAWS" |
+           word != "LAWYER" |
+           word != "LAY" |
+           word != "LEAK" |
+           word != "LEAN" |
+           word != "LENT" |
+           word != "LIGHT" |
+           word != "LINK" |
+           word != "LITTLE" |
+           word != "LOCK" |
+           word != "LOAN" |
+           word != "LONG" |
+           word != "LOVE" |
+           word != "LOVING" |
+           word != "LOW" |
+           word != "MAJOR" |
+           word != "MAN" |
+           word != "MANUAL" |
+           word != "MASK" |
+           word != "MAY" |
+           word != "MEANS" |
+           word != "MERCY" |
+           word != "MIX" |
+           word != "MOCK" |
+           word != "MONEY" |
+           word != "MORE" |
+           word != "MUSIC" |
+           word != "NAIL" |
+           word != "NATION" |
+           word != "NATIONS" |
+           word != "NEW" |
+           word != "PACK" |
+           word != "PASS" |
+           word != "PATCH" |
+           word != "PEACE" |
+           word != "PEAK" |
+           word != "PEEK" |
+           word != "POOL" |
+           word != "PRECIOUS" |
+           word != "PRICE" |
+           word != "PRIOR" |
+           word != "PRUDENCE" |
+           word != "QUICK" |
+           word != "RASH" |
+           word != "REAL" |
+           word != "RICH" |
+           word != "RING" |
+           word != "SAMPLE" |
+           word != "SAMPLES" |
+           word != "SEAL" |
+           word != "SEALS" |
+           word != "SEE" |
+           word != "SELL" |
+           word != "SELLS" |
+           word != "SELLERS" |
+           word != "SETTLE" |
+           word != "SETTLES" |
+           word != "SMALL" |
+           word != "SONG" |
+           word != "SPEAKS" |
+           word != "SPEED" |
+           word != "STILL" |
+           word != "STOCK" |
+           word != "STOCKS" |
+           word != "STREET" |
+           word != "TINY" |
+           word != "TOY" |
+           word != "TREAT" |
+           word != "WALL" |
+           word != "WAY" |
+           word != "WEEKS" |
+           word != "WILL" |
+           word != "WISDOM" |
+           word != "WISE" |
+           word != "WORTH" |
+           word != "WORD" 
+        ) %>% add_row(word = "OPPENHEIMER")
+# names includes sales, going to remove it for now
+
+# hand picked marketing terms
+terms <- read_csv(here::here("Data", "marketing_words.csv")) %>% 
+  mutate(word= str_to_lower(word))
+
 
 lm_stopwords_list <- sw_auditor %>% 
   bind_rows(sw_dates_numbers, sw_generic_long, sw_geography, sw_names) %>% 
@@ -70,7 +265,7 @@ lm_stopwords_list <- sw_auditor %>%
   
 
 # Loughran McDonald stop words
-word_tokens_lm <- word_tokens %>% anti_join(lm_stopwords_list)
+word_tokens_lm <- word_tokens %>% anti_join(lm_stopwords_list) 
 
 # Tidytext stop words
 word_tokens_tt <- word_tokens %>% anti_join(stop_words)
@@ -162,6 +357,13 @@ all_stopwords <- word_tokens_all %>%
   arrange(desc(n)) %>% 
   mutate(stopwords = "All stop word lexicons")
 
+marketing_words <- word_tokens %>% 
+  inner_join(terms) %>% 
+  group_by(year) %>% 
+  count(word) %>% 
+  arrange(desc(n)) %>% 
+  mutate(stopwords = "Marketing Words")
+
 # Binding previous data frames, grouped by year and quarter
 word_counts <- no_stopwords %>% 
   bind_rows(tidytext_stopwords,
@@ -170,7 +372,8 @@ word_counts <- no_stopwords %>%
             iso_stopwords,
             snowball_stopwords,
             onix_stopwords,
-            all_stopwords)
+            all_stopwords,
+            marketing_words)
 
 write_csv(word_counts, here::here("Data", "word_counts.csv"))
 
@@ -249,7 +452,7 @@ stem_tokens_hunspell <- word_tokens_both %>%
 # No stopwords removed, contractions are gone though
 
 # Add counts, filter by 10 or up, nest words 
-nested_words <- word_tokens %>% 
+nested_words <- word_tokens_lm %>% 
   add_count(word) %>%
   filter(n >= 10) %>%
   select(-n) %>%
@@ -288,21 +491,21 @@ plan(multisession)  ## for parallel processing
 
 # COmmenting out for now, will revisit later
 
-# tidy_pmi <- nested_words %>%
-#   mutate(words = future_map(words, slide_windows, 8L)) %>%
-#   unnest(words) %>%
-#   unite(window_id, title, window_id) %>%
-#   pairwise_pmi(word, window_id)
+tidy_pmi <- nested_words %>%
+  mutate(words = future_map(words, slide_windows, 8L)) %>%
+  unnest(words) %>%
+  unite(window_id, title, window_id) %>%
+  pairwise_pmi(word, window_id)
 
 
 # Creating the vectors
 
-# tidy_word_vectors <- tidy_pmi %>%
-#   widely_svd(
-#     item1, item2, pmi,
-#     nv = 100, maxit = 1000
-#   )
-# 
+tidy_word_vectors <- tidy_pmi %>%
+  widely_svd(
+    item1, item2, pmi,
+    nv = 100, maxit = 1000
+  )
+
 # # Hurray!
 
 
@@ -324,8 +527,9 @@ nearest_neighbors <- function(df, token) {
 }
 
 
-# nearest_neighbors(tidy_word_vectors, "q1")
+nearest_neighbors(tidy_word_vectors, "sales")
 
+nearest_neighbors(tidy_word_vectors, "drive")
 
 # Document embeddings
 # Incorrect dimensions when not filtering stopwords
