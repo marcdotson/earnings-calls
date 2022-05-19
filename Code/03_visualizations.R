@@ -29,6 +29,15 @@ lm_stopwords %>%
   scale_y_reordered()
 
 
+word_tokens %>% 
+  inner_join(terms) %>% 
+  count(word) %>%
+  arrange(desc(n)) %>% 
+  ggplot(aes(x = n, y = word)) +
+  geom_col()
+
+  
+
 # test for flexdashboard 
 word_counts %>% 
   filter(stopwords=="lm") %>% 
@@ -50,7 +59,7 @@ word_counts %>%
 tidy_word_vectors %>%
   filter(dimension <= 24) %>%
   group_by(dimension) %>%
-  top_n(12, abs(value)) %>%
+  top_n(8, abs(value)) %>%
   ungroup() %>%
   mutate(item1 = reorder_within(item1, value, dimension)) %>%
   ggplot(aes(item1, value, fill = dimension)) +
