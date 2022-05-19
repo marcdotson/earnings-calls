@@ -17,8 +17,8 @@ call_data <- transcripts %>%
   # Filter transcripts that are unlikely to be earning calls.
   anti_join(
     bind_rows(
-      filter(temp, grepl("abstract|(event brief)", title)),          # Filter transcripts with "abstract" or "event brief".
-      filter(temp, grepl(str_c(
+      filter(transcripts, grepl("abstract|(event brief)", title)),   # Filter transcripts with "abstract" or "event brief".
+      filter(transcripts, grepl(str_c(
         "(full year)|annual", "|",                                   # Filter transcripts with "full year", "annual" or
         "preliminary|interim|fiscal", "|",                           # "preliminary", "interim", "fiscal" or
         "(half year)|(year end)|yearend"                             # "half year", "year end", or "yearend"
@@ -84,6 +84,8 @@ call_data <- transcripts %>%
   ) %>%
   drop_na(quarter) %>%
   drop_na(year)
+
+call_data
 
 # Firm Performance --------------------------------------------------------
 # Create a plain text file (.txt) with one GVKEY code per line
