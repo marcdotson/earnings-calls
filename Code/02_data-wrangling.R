@@ -11,7 +11,6 @@ library(edgar)
 
 # Read data.
 call_data <- read_rds(here::here("Data", "call_data.rds"))
-joint_data <- read_rds(here::here("Data", "joint_data.rds"))
 
 #Notes on packages:
 #The SMLTA book incorporates several different packages which supplement the tidytext package:
@@ -37,18 +36,37 @@ joint_data <- read_rds(here::here("Data", "joint_data.rds"))
 # cont <- list("ll", "ve", "t", "s", "d", "re")
 # 'd can be had or would
 
-word_tokens <- call_data %>%
-  mutate(text = str_replace_all(text, "\\.", " ")) %>%
-  mutate(text = str_replace_all(text, "\\b", " ")) %>%
-  mutate(text = str_replace_all(text, "(?<=')ll", " will")) %>%
-  mutate(text = str_replace_all(text, "(?<=')ve ", "have")) %>%
-  mutate(text = str_replace_all(text, "(?<=')t ", " not")) %>%
-  mutate(text = str_replace_all(text, "(?<=')d ", " had")) %>%
-  mutate(text = str_replace_all(text, "(?<=')s ", " is")) %>%
-  mutate(text = str_replace_all(text, "(?<=')re ", " are")) %>%
-  unnest_tokens(word, text, token = "words") %>% 
-  mutate(word = if_else(word == "ve", "have", word)) %>% 
-  mutate(word = if_else(word == "ll", "will", word))
+# Accidentally deleted all my work, hurray me. Need to reduce the size to properly 
+# tokenize, in order to do word embeddings
+
+# slicing and dicing data to make it manageable 
+
+call_data <- call_data %>% 
+  mutate(rowID = row_number()) %>% 
+  select(rowID, text)
+
+call_data1 <- call_data %>% 
+  slice(1:45000)
+
+write_csv(call_data1, here::here("Data", "sub_data1.csv"))
+
+call_data2 <- call_data %>% 
+  slice(45000:90000)
+
+write_csv(call_data2, here::here("Data", "sub_data2.csv"))
+
+call_data3 <- call_data %>% 
+  slice(90000:135000)
+
+write_csv(call_data3, here::here("Data", "sub_data3.csv"))
+
+call_data4 <- call_data %>% 
+  slice(135000:177151)
+
+write_csv(call_data4, here::here("Data", "sub_data4.csv"))
+
+rm(list = c("call_data", "call_data1", "call_data2", "call_data3", "call_data4"))
+
 
 # Remove Stop Words -------------------------------------------------------
 # - stopwords data frame needs to be looked at in tidytext.
@@ -260,9 +278,170 @@ terms <- read_csv(here::here("Data", "marketing_words.csv")) %>%
 
 
 lm_stopwords_list <- sw_auditor %>% 
-  bind_rows(sw_dates_numbers, sw_generic_long, sw_geography, sw_names) %>% 
+  bind_rows(sw_dates_numbers, sw_generic_long, sw_geography) %>% 
   mutate(word= str_to_lower(word))
   
+
+# replacing all punctuation with spaces, I don't think that will kill the 
+# embeddings, but it reduced the word counts by quite a bit. 
+
+# Split 1 of 4
+call_data1 <- read_csv(here::here("Data", "sub_data1.csv")) # Load split
+word_tokens <- call_data1 %>% 
+  mutate(text = str_replace_all(text, "[:punct:]", " ")) %>% # strip punctuation
+  unnest_tokens(word, text, token = "words", strip_punct = TRUE) %>% # tokenize
+  anti_join(stop_words) %>% # tidytext stop words
+#  filter(!(word %in% stopwords(source = "stopwords-iso"))) %>% # ISO stop words
+  anti_join(lm_stopwords_list) %>% # LM stop words
+  mutate(word = case_when(word == "ll" ~ "will", # clean up remaining contractions
+                          word == "ve" ~ "have",
+                          word == "t" ~ "not",
+                          word == "d" ~ "had",
+                          word == "s" ~ "is",
+                          word == "re" ~ "are",
+                          TRUE ~ word))
+
+# saving csv's because 32 GB of ram isn't enough, apparently
+
+write_csv(word_tokens, here::here("Data", "tokens1.csv")) 
+
+# word count will be used to further trim words
+word_counts <- word_tokens %>% 
+  count(word)
+
+write_csv(word_counts, here::here("Data", "counts1.csv"))
+
+# removing files
+rm(list = c("word_tokens", "word_counts", "call_data1"))
+
+# stopwords list
+stopwords_list <- stop_words %>% 
+  select(word) %>%
+  bind_rows(lm_stopwords_list) %>% 
+  distinct()
+
+write_csv(stopwords_list, here::here("Data", "stopwords_list.csv"))
+
+
+# Split 2 of 4, code is functionally the same as above
+call_data2 <- read_csv(here::here("Data", "sub_data2.csv"))
+word_tokens <- call_data2 %>%
+  mutate(text = str_replace_all(text, "[:punct:]", " ")) %>% 
+  unnest_tokens(word, text, token = "words", strip_punct = TRUE) %>% 
+  anti_join(stop_words) %>% 
+#  filter(!(word %in% stopwords(source = "stopwords-iso"))) %>% 
+  anti_join(lm_stopwords_list) %>%
+  mutate(word = case_when(word == "ll" ~ "will",
+                          word == "ve" ~ "have",
+                          word == "t" ~ "not",
+                          word == "d" ~ "had",
+                          word == "s" ~ "is",
+                          word == "re" ~ "are",
+                          TRUE ~ word))
+
+write_csv(word_tokens, here::here("Data", "tokens2.csv"))
+
+word_counts <- word_tokens %>% 
+  count(word)
+
+write_csv(word_counts, here::here("Data", "counts2.csv"))
+
+rm(list = c("word_tokens", "word_counts", "call_data2"))
+
+# Split 3 of 4
+call_data3 <- read_csv(here::here("Data", "sub_data3.csv"))
+word_tokens <- call_data3 %>%
+  mutate(text = str_replace_all(text, "[:punct:]", " ")) %>% 
+  unnest_tokens(word, text, token = "words", strip_punct = TRUE) %>% 
+  anti_join(stop_words) %>% 
+#  filter(!(word %in% stopwords(source = "stopwords-iso"))) %>% 
+  anti_join(lm_stopwords_list) %>%
+  mutate(word = case_when(word == "ll" ~ "will",
+                          word == "ve" ~ "have",
+                          word == "t" ~ "not",
+                          word == "d" ~ "had",
+                          word == "s" ~ "is",
+                          word == "re" ~ "are",
+                          TRUE ~ word))
+
+write_csv(word_tokens, here::here("Data", "tokens3.csv"))
+
+word_counts <- word_tokens %>% 
+  count(word)
+
+write_csv(word_counts, here::here("Data", "counts3.csv"))
+
+rm(list = c("word_tokens", "word_counts", "call_data3"))
+
+# Split 4 of 4
+call_data4 <- read_csv(here::here("Data", "sub_data4.csv"))
+word_tokens <- call_data4 %>%
+  mutate(text = str_replace_all(text, "[:punct:]", " ")) %>% 
+  unnest_tokens(word, text, token = "words", strip_punct = TRUE) %>% 
+  anti_join(stop_words) %>% 
+#  filter(!(word %in% stopwords(source = "stopwords-iso"))) %>% 
+  anti_join(lm_stopwords_list) %>%
+  mutate(word = case_when(word == "ll" ~ "will",
+                          word == "ve" ~ "have",
+                          word == "t" ~ "not",
+                          word == "d" ~ "had",
+                          word == "s" ~ "is",
+                          word == "re" ~ "are",
+                          TRUE ~ word))
+
+write_csv(word_tokens, here::here("Data", "tokens4.csv"))
+
+word_counts <- word_tokens %>% 
+  count(word)
+
+write_csv(word_counts, here::here("Data", "counts4.csv"))
+
+rm(list = c("word_tokens", "word_counts", "call_data4"))
+
+# Accidentally deleted all my work again, fortunately I saved this time
+
+c1 <- read_csv(here::here("Data", "counts1.csv"))
+c2 <- read_csv(here::here("Data", "counts2.csv"))
+c3 <- read_csv(here::here("Data", "counts3.csv"))
+c4 <- read_csv(here::here("Data", "counts4.csv"))
+
+# 100 seems reasonable, the vast majority of those words are useless
+
+tot_count <- c1 %>% 
+  bind_rows(c2, c3, c4) %>%
+  group_by(word) %>% 
+  summarise(n = sum(n),
+            word = word) %>% 
+  distinct() %>% 
+  filter(n >= 100)
+
+
+write_csv(tot_count, here::here("Data", "tot_count.csv"))
+
+rm(list = c("c1", "c2", "c3", "c4"))
+
+call_data1 <- read_csv(here::here("Data", "tokens1.csv")) %>% 
+  semi_join(tot_count)
+call_data2 <- read_csv(here::here("Data", "tokens2.csv")) %>% 
+  semi_join(tot_count)
+call_data3 <- read_csv(here::here("Data", "tokens3.csv")) %>% 
+  semi_join(tot_count)
+call_data4 <- read_csv(here::here("Data", "tokens4.csv")) %>% 
+  semi_join(tot_count)
+
+call_tokens <- call_data1 %>% 
+  bind_rows(call_data2)
+
+rm(list = c("call_data1", "call_data2"))
+
+call_tokens <- call_tokens %>% bind_rows(call_data3) %>% 
+  bind_rows(call_data4)
+
+
+rm(list = c("call_data3", "call_data4"))
+
+write_csv(call_tokens, here::here("Data", "call_tokens.csv"))
+
 
 # Loughran McDonald stop words
 word_tokens_lm <- word_tokens %>% anti_join(lm_stopwords_list) 
@@ -452,12 +631,10 @@ stem_tokens_hunspell <- word_tokens_both %>%
 # No stopwords removed, contractions are gone though
 
 # Add counts, filter by 10 or up, nest words 
-nested_words <- word_tokens_lm %>% 
-  add_count(word) %>%
-  filter(n >= 10) %>%
-  select(-n) %>%
+nested_words <- call_tokens %>% 
   nest(words = c(word))
 
+rm(call_tokens)
 # Creating slide windows, which are used to calculate skipgram probabilities
 
 
@@ -492,9 +669,9 @@ plan(multisession)  ## for parallel processing
 # COmmenting out for now, will revisit later
 
 tidy_pmi <- nested_words %>%
-  mutate(words = future_map(words, slide_windows, 8L)) %>%
+  mutate(words = future_map(words, slide_windows, 4L)) %>%
   unnest(words) %>%
-  unite(window_id, title, window_id) %>%
+  unite(window_id, rowID, window_id) %>%
   pairwise_pmi(word, window_id)
 
 

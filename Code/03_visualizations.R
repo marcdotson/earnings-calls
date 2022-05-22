@@ -1,5 +1,14 @@
 # Mostly unsupervised visualizations.
 
+
+# reimport for fun
+call_data <- read_rds(here::here("Data", "call_data.rds")) %>%
+  mutate(rowID = row_number()) %>% 
+  select(year, rowID)
+
+call_tokens <- call_tokens %>% 
+  left_join(call_data, by = "rowID")
+
 # Overall word count.
 
 
@@ -36,12 +45,27 @@ word_tokens %>%
   ggplot(aes(x = n, y = word)) +
   geom_col()
 
-  
+call_tokens <- read_csv(here::here("Data", "call_tokens.csv"))
 
-# test for flexdashboard 
-word_counts %>% 
-  filter(stopwords=="lm") %>% 
+call_tokens %>% 
+  inner_join(terms) %>% 
+  count(word) %>%
+  arrange(desc(n)) %>% 
+  slice(1:25) %>% 
+  mutate(word = fct_reorder(word, n)) %>% 
+  ggplot(aes(x = n, y = word)) +
+  geom_col()
+
+
+
+
+
+# top 10 marketing terms by year
+call_tokens %>% 
+  inner_join(terms) %>% 
   group_by(year) %>% 
+  count(word) %>%
+  arrange(desc(n)) %>% 
   slice(1:10) %>% 
   ungroup %>% 
   mutate(word = reorder_within(word, n, year)) %>%
@@ -49,6 +73,31 @@ word_counts %>%
   geom_col() +
   facet_wrap(~ year, scales="free") +
   scale_y_reordered()
+
+
+
+# top 10 words by year
+call_tokens %>% 
+  group_by(year) %>% 
+  count(word) %>%
+  arrange(desc(n)) %>% 
+  slice(1:10) %>% 
+  ungroup %>% 
+  mutate(word = reorder_within(word, n, year)) %>%
+  ggplot(aes(x = n, y = word)) +
+  geom_col() +
+  facet_wrap(~ year, scales="free") +
+  scale_y_reordered()
+
+# 25 overall word count
+call_tokens %>% 
+  count(word) %>%
+  arrange(desc(n)) %>% 
+  slice(1:25) %>% 
+  mutate(word = fct_reorder(word, n)) %>% 
+  ggplot(aes(x = n, y = word)) +
+  geom_col()
+
 
 # Word embeddings visualizations or as part of modeling?
 
