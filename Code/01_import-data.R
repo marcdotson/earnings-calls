@@ -4,7 +4,7 @@ library(tidyverse)
 
 # Import all earning call transcripts, separate the doc_id, and remove non-UTF-8 characters.
 transcripts <- read_rds(here::here("Data", "transcripts.rds")) |> 
-  tibble() %>% 
+  tibble() |> 
   separate(doc_id, into = c("gvkey", "call_date", "title"), sep = "_")
 
 # Clean and filter so we have transcripts that have the correct quarter and year.
