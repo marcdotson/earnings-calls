@@ -1,5 +1,5 @@
 # Earnings Calls ----------------------------------------------------------
-# Load libraries.
+# Load packages.
 library(tidyverse)
 
 # Import all earning call transcripts, separate the doc_id, and remove non-UTF-8 characters.
