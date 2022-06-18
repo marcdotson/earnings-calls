@@ -1,8 +1,9 @@
 # Earnings Calls ----------------------------------------------------------
 # Load packages.
 library(tidyverse)
+library(GICS) # Install using devtools::install_github("bautheac/GICS").
 
-# Import all earning call transcripts, separate the doc_id, and remove non-UTF-8 characters.
+# Import all earning call transcripts and separate the doc_id.
 transcripts <- read_rds(here::here("Data", "transcripts.rds")) |> 
   tibble() |> 
   separate(doc_id, into = c("gvkey", "call_date", "title"), sep = "_")
@@ -83,17 +84,36 @@ call_data <- transcripts |>
     year = ifelse(is.na(year) & quarter %in% c(3, 4), lubridate::year(call_date), year)
   ) |>
   drop_na(quarter) |>
-  drop_na(year)
-
+  drop_na(year) |> 
+  # Finally, ensure UTF-8 encoding for the titles and text.
+  mutate(
+    title = iconv(title, to = "UTF-8"),
+    text = iconv(text, to = "UTF-8")
+  )
+  
 call_data
 
 # Firm Performance --------------------------------------------------------
 # Create a plain text file (.txt) with one GVKEY code per line
-# for pulling quarterly revenue data from Computstat.
+# for pulling quarterly revenue and industry data from Computstat.
 call_data |> 
   count(gvkey) |> 
   select(gvkey) |> 
   write_tsv(here::here("Private", "Compustat GVKEYs.txt"), col_names = FALSE)
+
+# Import the GICS standards and rename variables to match Compustat data.
+data(standards)
+gics <- standards |> 
+  rename(
+    gsector = `sector id`,
+    sector = `sector name`,
+    ggroup = `industry group id`,
+    group = `industry group name`,
+    gind = `industry id`,
+    industry = `industry name`,
+    gsubind = `subindustry id`,
+    sub_industry = `subindustry name`
+  )
 
 # Import Compustat fundamentals quarterly.
 firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")) |> 
@@ -103,18 +123,29 @@ firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")
     quarter = fqtr,
     revenue = revtq
   ) |> 
-  select(gvkey, year, quarter, revenue)
-  
+  # Use the GICS standards to get sector, group, industry, and sub-industry names.
+  left_join(select(gics, gsector, sector) |> distinct(), by = "gsector") |> 
+  left_join(select(gics, ggroup, group) |> distinct(), by = "ggroup") |> 
+  left_join(select(gics, gind, industry) |> distinct(), by = "gind") |> 
+  left_join(select(gics, gsubind, sub_industry) |> distinct(), by = "gsubind") |> 
+  select(gvkey, year, quarter, revenue, sector, group, industry, sub_industry)
+
 firm_data
 
 # Join Data ---------------------------------------------------------------
 # Join the earnings calls and firm performance data.
 call_data <- call_data |> 
   inner_join(firm_data, by = c("gvkey", "year", "quarter")) |> 
-  select(gvkey, call_date, year, quarter, revenue, title, text)
+  mutate(id = row_number()) |> 
+  select(
+    id, gvkey, sector, group, industry, sub_industry, 
+    call_date, year, quarter, revenue, title, text
+  ) |> 
+  # Drop any observations that don't have revenue data.
+  drop_na(revenue)
 
 call_data
 
-# Write data.
+# Write call data.
 write_rds(call_data, here::here("Data", "call_data.rds"))
 
