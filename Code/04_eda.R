@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(lubridate)
+library(edgar) # Includes the LMMasterDictionary.
 
 # Import marketing term lists, resave as .rds files
 
