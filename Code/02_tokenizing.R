@@ -105,7 +105,7 @@ for (i in 1:num_splits) {
 #   word_tokens <- bind_rows(word_tokens, get(str_c("tokens_", i)))
 # }
 
-word_tokens
+word_tokens <- word_tokens |> ungroup()
 
 # Remove data that no longer needs to be held in memory.
 # rm(list = setdiff(ls(), "word_tokens"))
