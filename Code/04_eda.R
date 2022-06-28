@@ -2,25 +2,28 @@
 # Load packages.
 library(tidyverse)
 library(lubridate)
-library(edgar) # Includes the Loughran and McDonald's master dictionary.
 
+# Import and transform data.
 word_tokens <- read_rds(here::here("Data", "word_tokens.rds"))  # Nested word tokens.
-clmd <- read_rds(here::here("Data", "clmd.rds"))                # Common Language Marketing Dictionary terms.
-lnm <- read_rds(here::here("Data", "lnm.rds"))                  # Loughran and McDonald dictionary terms.
 unnest_word_tokens <- word_tokens |> unnest(cols = words)       # Unnest word tokens.
 overall_word_counts <- unnest_word_tokens |> count(word)        # Compute overall word tokens.
 sector_word_counts <- unnest_word_tokens |> count(word, sector) # Compute word tokens by sector.
+clmd <- read_rds(here::here("Data", "clmd.rds"))                # Common Language Marketing Dictionary terms.
+lnm <- read_rds(here::here("Data", "lnm.rds"))                  # Loughran and McDonald dictionary terms.
+
+overall_word_counts
+sector_word_counts
 
 # Save and load intermediate steps, as needed.
-write_rds(lnm_tokens, here::here("Data", "overall_word_counts.rds"))
-write_rds(clmd_tokens, here::here("Data", "sector_word_counts.rds"))
-# overall_word_counts <- read_rds(here::here("Data", "overall_word_counts.rds"))
-# sector_word_counts <- read_rds(here::here("Data", "sector_word_counts.rds"))
+# write_rds(overall_word_counts, here::here("Data", "overall_word_counts.rds"))
+# write_rds(sector_word_counts, here::here("Data", "sector_word_counts.rds"))
+overall_word_counts <- read_rds(here::here("Data", "overall_word_counts.rds"))
+sector_word_counts <- read_rds(here::here("Data", "sector_word_counts.rds"))
 
 # Top 10 overall terms.
 overall_word_counts |> 
   arrange(desc(n)) |> 
-  slice(1:10) |> 
+  slice(1:5) |> 
   mutate(word = fct_reorder(word, n)) |> 
   ggplot(aes(x = n, y = word)) +
   geom_col()
