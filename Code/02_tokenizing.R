@@ -17,7 +17,7 @@ call_data
 # # write_rds(call_data, here::here("Data", "temp_call.rds"))
 # call_data <- read_rds(here::here("Data", "temp_call.rds"))
 
-# Import L&M generic stop words.
+# Import L&M generic stop words (not including clmd and lmn marketing terms).
 generic_stopwords <- read_rds(here::here("Data", "generic_stopwords_long.rds"))
 
 generic_stopwords
@@ -98,6 +98,8 @@ for (i in 1:num_splits) {
 
 # Ungroup word_tokens.
 word_tokens <- word_tokens |> ungroup()
+
+word_tokens
 
 # Write word_tokens.
 write_rds(word_tokens, here::here("Data", "word_tokens.rds"))
