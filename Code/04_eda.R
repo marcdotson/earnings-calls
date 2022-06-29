@@ -1,4 +1,8 @@
 # Visualize Word Counts ---------------------------------------------------
+# I'm not married to the size specification of each saved PNG, which you can
+# drop right into Figures and push to GitHub. We need to look at differences by
+# the additional variables that we've included, starting with sector.
+
 # Load packages.
 library(tidyverse)
 library(lubridate)
@@ -124,6 +128,10 @@ fit_lda6 %>%
 rm(unnest_word_tokens, overall_word_counts, sector_word_counts)
 
 # Visualize Revenue Over Time ---------------------------------------------
+# This visualization is a good start, but we need to explore some more to see
+# how this might be meaningful. Again, we need to look at differences by
+# the additional variables that we've included, probably starting with sector.
+
 # Count marketing words based on lnm terms.
 lnm_tokens <- word_tokens |> 
   # Making year_quarter variable for easier time series.
@@ -247,6 +255,9 @@ test12 <- lnm |>
 
 # Overall word count by year.
 
-
-
+# Correlation -------------------------------------------------------------
+# Before we get to regression, let's do a simple correlation between the proportion
+# of marketing terms (by CLMD and L&M) and the revenue. Produce this as a table, not
+# just an overall correlation, but looking at differences by the additional variables 
+# that we've included, starting with sector.
 
