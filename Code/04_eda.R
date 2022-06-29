@@ -6,19 +6,19 @@ library(lubridate)
 # Import and transform data.
 word_tokens <- read_rds(here::here("Data", "word_tokens.rds"))  # Nested word tokens.
 unnest_word_tokens <- word_tokens |> unnest(cols = words)       # Unnest word tokens.
-overall_word_counts <- unnest_word_tokens |> count(word)        # Compute overall word tokens.
-sector_word_counts <- unnest_word_tokens |> count(word, sector) # Compute word tokens by sector.
+# overall_word_counts <- unnest_word_tokens |> count(word)        # Compute overall word tokens.
+# sector_word_counts <- unnest_word_tokens |> count(word, sector) # Compute word tokens by sector.
 clmd <- read_rds(here::here("Data", "clmd.rds"))                # Common Language Marketing Dictionary terms.
 lnm <- read_rds(here::here("Data", "lnm.rds"))                  # Loughran and McDonald dictionary terms.
-
-overall_word_counts
-sector_word_counts
 
 # Save and load intermediate steps, as needed.
 # write_rds(overall_word_counts, here::here("Data", "overall_word_counts.rds"))
 # write_rds(sector_word_counts, here::here("Data", "sector_word_counts.rds"))
 overall_word_counts <- read_rds(here::here("Data", "overall_word_counts.rds"))
 sector_word_counts <- read_rds(here::here("Data", "sector_word_counts.rds"))
+
+overall_word_counts
+sector_word_counts
 
 # Top 10 overall terms.
 overall_word_counts |> 
