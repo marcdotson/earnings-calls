@@ -96,9 +96,6 @@ for (i in 1:num_splits) {
   # unlink(here::here("Data", tokens_name))
 }
 
-# Ungroup word_tokens.
-word_tokens <- word_tokens |> ungroup()
-
 word_tokens
 
 # Write word_tokens.
