@@ -92,8 +92,8 @@ for (i in 1:num_splits) {
   # highlights any documents which might have been missed.
   call_data <- call_data |> anti_join(word_tokens, by = "id")
   
-  # # Delete sliced tokenized data.
-  # unlink(here::here("Data", tokens_name))
+  # Delete sliced tokenized data.
+  unlink(here::here("Data", tokens_name))
 }
 
 # Ungroup word_tokens.
