@@ -13,7 +13,7 @@ call_data <- read_rds(here::here("Data", "call_data.rds")) |>
 
 call_data
 
-# # Mutate function takes a bit to run, so we save it as temp_call.rds.
+# # Mutate can take a bit to run, so we can save it as temp_call.rds.
 # # write_rds(call_data, here::here("Data", "temp_call.rds"))
 # call_data <- read_rds(here::here("Data", "temp_call.rds"))
 
@@ -23,6 +23,8 @@ generic_stopwords <- read_rds(here::here("Data", "generic_stopwords_long.rds"))
 generic_stopwords
 
 # Tokenize call data in sets to avoid memory loss and limits.
+# If we need to revisit tokenizing, we can parallelize this code instead
+# of splitting it into separate data sets that we save and then delete.
 num_splits <- 30
 for (i in seq_along(1:num_splits)) {
   # Specify the start and end rows for each of the sets.
