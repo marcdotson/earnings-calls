@@ -1,151 +1,307 @@
 # Visualize Word Counts ---------------------------------------------------
-# I'm not married to the size specification of each saved PNG, which you can
-# drop right into Figures and push to GitHub. We need to look at differences by
-# the additional variables that we've included, starting with sector.
-
 # Load packages.
 library(tidyverse)
 library(lubridate)
+library(tidytext)
 
-# Import and transform data.
-word_tokens <- read_rds(here::here("Data", "word_tokens.rds"))  # Nested word tokens.
-unnest_word_tokens <- word_tokens |> unnest(cols = words)       # Unnest word tokens.
-# overall_word_counts <- unnest_word_tokens |> count(word)        # Compute overall word tokens.
-# sector_word_counts <- unnest_word_tokens |> count(word, sector) # Compute word tokens by sector.
-clmd <- read_rds(here::here("Data", "clmd.rds"))                # Common Language Marketing Dictionary terms.
-lnm <- read_rds(here::here("Data", "lnm.rds"))                  # Loughran and McDonald dictionary terms.
+# Import word tokens and marketing dictionaries.
+word_tokens <- read_rds(here::here("Data", "word_tokens.rds"))
+clmd <- read_rds(here::here("Data", "clmd.rds")) # Common Language Marketing Dictionary.
+lnm <- read_rds(here::here("Data", "lnm.rds"))   # Marketing terms from Loughran and McDonald.
 
-# Save and load intermediate steps, as needed.
-# write_rds(overall_word_counts, here::here("Data", "overall_word_counts.rds"))
-# write_rds(sector_word_counts, here::here("Data", "sector_word_counts.rds"))
-overall_word_counts <- read_rds(here::here("Data", "overall_word_counts.rds"))
-sector_word_counts <- read_rds(here::here("Data", "sector_word_counts.rds"))
+# Indicate GICS subset.
+ind_overa <- 0
+ind_sectr <- 0
+ind_group <- 1
+ind_indus <- 0
+ind_subin <- 0
 
-overall_word_counts
-sector_word_counts
+# Specify name conditioned on indicator flags.
+if (ind_overa == 1) name <- "overall"
+if (ind_sectr == 1) name <- "sector"
+if (ind_group == 1) name <- "group"
+if (ind_indus == 1) name <- "industry"
+if (ind_subin == 1) name <- "sub_industry"
 
-# Top 10 overall terms.
-overall_word_counts |> 
-  arrange(desc(n)) |> 
-  slice(1:5) |> 
-  mutate(word = fct_reorder(word, n)) |> 
-  ggplot(aes(x = n, y = word)) +
-  geom_col()
+# Compute word counts.
+if (ind_overa == 1) {
+  word_counts <- word_tokens |> 
+    unnest(cols = words) |> 
+    count(word)
+}
+if (ind_overa != 1) {
+  word_counts <- word_tokens |> 
+    unnest(cols = words) |> 
+    count(word, .data[[name]])
+}
 
-ggsave(
-  filename = here::here("Figures", "overall-terms_top-10.png"),
-  width = 4, height = 7, units = "in"
-)
+word_counts
 
-# Top 25 overall terms.
-overall_word_counts |> 
-  arrange(desc(n)) |> 
-  slice(1:25) |> 
-  mutate(word = fct_reorder(word, n)) |> 
-  ggplot(aes(x = n, y = word)) +
-  geom_col()
-
-ggsave(
-  filename = here::here("Figures", "overall-terms_top-25.png"),
-  width = 4, height = 7, units = "in"
-)
-
-# Top 10 marketing terms using clmd.
-overall_word_counts
-  semi_join(clmd, by = "word") |> 
-  arrange(desc(n)) |> 
-  slice(1:10) |> 
-  mutate(word = fct_reorder(word, n)) |> 
-  ggplot(aes(x = n, y = word)) +
-  geom_col()
-
-ggsave(
-  filename = here::here("Figures", "marketing-terms_top-10_clmd.png"),
-  width = 4, height = 7, units = "in"
-)
-
-# Top 25 marketing terms using clmd.
-overall_word_counts |> 
-  semi_join(clmd, by = "word") |> 
-  arrange(desc(n)) |> 
-  slice(1:25) |> 
-  mutate(word = fct_reorder(word, n)) |> 
-  ggplot(aes(x = n, y = word)) +
-  geom_col()
+# Visualize word counts.
+n_words <- 10
+if (ind_overa == 1) {
+  word_counts |> 
+    arrange(desc(n)) |> 
+    slice(1:n_words) |> 
+    mutate(word = fct_reorder(word, n)) |> 
+    ggplot(aes(x = n, y = word)) +
+    geom_col() +
+    labs(title = "Top Overall Word Counts")
+}
+if (ind_overa != 1) {
+  word_counts |> 
+    group_by(.data[[name]]) |> 
+    top_n(n_words, n) |> 
+    ungroup() |> 
+    mutate(word = reorder_within(word, n, .data[[name]])) |> 
+    ggplot(aes(x = n, y = word, fill = as.factor(.data[[name]]))) +
+    geom_col(show.legend = FALSE) +
+    facet_wrap(
+      ~ .data[[name]], scales = "free",
+      nrow = round(length(unique(word_counts[[name]])) / 3),
+      ncol = round(length(unique(word_counts[[name]])) / 4)
+    ) +
+    scale_y_reordered() +
+    labs(title = str_c("Top Word Counts by ", str_to_title(name)))
+}
 
 ggsave(
-  filename = here::here("Figures", "marketing-terms_top-25_clmd.png"),
-  width = 4, height = 7, units = "in"
+  filename = here::here("Figures", str_c(name, "-word_counts.png")),
+  width = 10, height = 12, units = "in", limitsize = FALSE
 )
 
-# Top 10 marketing terms using lnm.
-unnest_word_tokens |> 
-  semi_join(lnm, by = "word") |> 
-  count(word) |> 
-  arrange(desc(n)) |> 
-  slice(1:10) |> 
-  mutate(word = fct_reorder(word, n)) |> 
-  ggplot(aes(x = n, y = word)) +
-  geom_col()
+# Visualize marketing terms using clmd.
+if (ind_overa == 1) {
+  word_counts |> 
+    semi_join(clmd, by = "word") |> 
+    arrange(desc(n)) |> 
+    slice(1:n_words) |> 
+    mutate(word = fct_reorder(word, n)) |> 
+    ggplot(aes(x = n, y = word)) +
+    geom_col() +
+    labs(title = "Top Overall Marketing Terms (CLMD)")
+}
+if (ind_overa != 1) {
+  word_counts |> 
+    semi_join(clmd, by = "word") |> 
+    group_by(.data[[name]]) |> 
+    top_n(n_words, n) |> 
+    ungroup() |> 
+    mutate(word = reorder_within(word, n, .data[[name]])) |> 
+    ggplot(aes(x = n, y = word, fill = as.factor(.data[[name]]))) +
+    geom_col(show.legend = FALSE) +
+    facet_wrap(
+      ~ .data[[name]], scales = "free",
+      nrow = round(length(unique(word_counts[[name]])) / 3),
+      ncol = round(length(unique(word_counts[[name]])) / 4)
+    ) +
+    scale_y_reordered() +
+    labs(title = str_c("Top Marketing Terms (CLMD) by ", str_to_title(name)))
+}
 
 ggsave(
-  filename = here::here("Figures", "marketing-terms_top-10_lnm.png"),
-  width = 4, height = 7, units = "in"
+  filename = here::here("Figures", str_c(name, "-marketing_terms_clmd.png")),
+  width = 10, height = 12, units = "in", limitsize = FALSE
 )
 
-# Top 25 marketing terms using lnm.
-unnest_word_tokens |> 
-  semi_join(lnm, by = "word") |> 
-  count(word) |> 
-  arrange(desc(n)) |> 
-  slice(1:25) |> 
-  mutate(word = fct_reorder(word, n)) |> 
-  ggplot(aes(x = n, y = word)) +
-  geom_col()
+# Visualize marketing terms using lnm.
+if (ind_overa == 1) {
+  word_counts |> 
+    semi_join(lnm, by = "word") |> 
+    arrange(desc(n)) |> 
+    slice(1:n_words) |> 
+    mutate(word = fct_reorder(word, n)) |> 
+    ggplot(aes(x = n, y = word)) +
+    geom_col() +
+    labs(title = "Top Overall Marketing Terms (L&M)")
+}
+if (ind_overa != 1) {
+  word_counts |> 
+    semi_join(lnm, by = "word") |> 
+    group_by(.data[[name]]) |> 
+    top_n(n_words, n) |> 
+    ungroup() |> 
+    mutate(word = reorder_within(word, n, .data[[name]])) |> 
+    ggplot(aes(x = n, y = word, fill = as.factor(.data[[name]]))) +
+    geom_col(show.legend = FALSE) +
+    facet_wrap(
+      ~ .data[[name]], scales = "free",
+      nrow = round(length(unique(word_counts[[name]])) / 3),
+      ncol = round(length(unique(word_counts[[name]])) / 4)
+    ) +
+    scale_y_reordered() +
+    labs(title = str_c("Top Marketing Terms (L&M) by ", str_to_title(name)))
+}
 
 ggsave(
-  filename = here::here("Figures", "marketing-terms_top-25_lnm.png"),
-  width = 4, height = 7, units = "in"
+  filename = here::here("Figures", str_c(name, "-marketing_terms_lnm.png")),
+  width = 10, height = 12, units = "in", limitsize = FALSE
 )
 
-
-
-
-
-
-fit_lda6 %>% 
-  tidy(matrix = "beta") %>%
-  group_by(topic) %>% 
-  top_n(10, beta) %>%
-  ungroup() %>%
-  mutate(term = reorder_within(term, beta, topic)) %>%
-  ggplot(aes(x = beta, y = term, fill = as.factor(topic))) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") +
-  scale_y_reordered()
-
-# Remove data that no longer needs to be held in memory.
-rm(unnest_word_tokens, overall_word_counts, sector_word_counts)
-
-# Visualize Revenue Over Time ---------------------------------------------
-# This visualization is a good start, but we need to explore some more to see
-# how this might be meaningful. Again, we need to look at differences by
-# the additional variables that we've included, probably starting with sector.
-
-# Count marketing words based on lnm terms.
-lnm_tokens <- word_tokens |> 
+# Correlation -------------------------------------------------------------
+dash_tokens <- 
+  # TIME SERIES PREP
+  word_tokens |> 
   # Making year_quarter variable for easier time series.
   unite(year_quarter, year, quarter, sep=":", remove = FALSE) |> 
   mutate(
     # Counting rows within the nested data.
-    overall_words = map_dbl(words, ~.x |> nrow()),
+    overall_count = map_dbl(words, ~.x |> nrow()),
     # Counting rows within the nested data after joining the dictionary.
-    marketing_words = map_dbl(words, ~.x |> semi_join(lnm, by = "word") |> nrow()),
+    lnm_count = map_dbl(words, ~.x |> semi_join(lnm, by = "word") |> nrow()),
+    clmd_count = map_dbl(words, ~.x |> semi_join(clmd, by = "word") |> nrow()),
     # Formatting year_quarter.
     year_quarter = yq(year_quarter), 
     # Converting revenue to double.
     revenue = as.double(revenue),
     # Word proportions.
+    lnm_prop =  lnm_count/overall_count,
+    clmd_count = clmd_count/overall_count
+  ) |> 
+  # NESTED MARKETING TERMS
+  rowwise() |> 
+  mutate(
+    # New nested tibbles containing counts of each word by dictionary
+    lnm_words = map(words, ~lnm |> rowwise() |>  mutate(x= (sum(.x %in% word)))),
+    clmd_words = map(words, ~clmd |> rowwise() |>  mutate(x= (sum(.x %in% word))))) |>
+  ungroup() |>
+  # BAD IDEA
+  mutate(sector = replace_na(sector, "N_A"),
+         group = replace_na(group, "N_A"),
+         industry = replace_na(industry, "N_A"),
+         sub_industry = replace_na(sub_industry, "N_A"))
+
+write_rds(dash_tokens, here::here("Data", "dash_tokens.rds"))
+
+# Import sentiment dictionaries, courtesy of tidytext.
+dash_tokens <- read_rds(here::here("Data", "dash_tokens.rds"))
+loughran <- get_sentiments("loughran") # Loughran and McDonald sentiment dictionary.
+
+# The following code matches word to their respective sentiments via the 
+# dictionaries and generates counts of each sentiment.
+
+# Start with overall word count, grouped by id.
+loughran_count <- overall_word_counts |> 
+  # Filter out words without sentiment value.
+  semi_join(loughran) |>
+  # Join sentiments to words. Words with multiple sentiments should be covered.
+  left_join(loughran) |> 
+  # Grouping by document id and sentiment.
+  group_by(id, sentiment) |> 
+  # Summing up the word counts in one column.
+  summarise(sen_sum = sum(n)) |> 
+  # Widening the data so each sentiment has its own column, each document is only 1 row.
+  pivot_wider(names_from = sentiment, values_from = sen_sum) |> 
+  # Ungrouping
+  ungroup() |> 
+  # Replacing all missing counts with 0.
+  mutate(across(.cols = everything(), ~replace_na(.x, 0))) |> 
+  # Renaming all sentiment columns to distinguish variable counts between dictionaries.
+  rename_with(~ str_c(.x, "_loughran"), .cols = -id)
+
+# Joining 
+dash_counts <- dash_tokens |> select(-c("data", "words")) |> 
+  left_join(loughran_count)
+
+# Adding strings to the end of each row to differentiate duplicate organization
+# levels e.g. Media group and Media industry
+dash_counts <- dash_counts |> mutate(
+  sector = str_c(sector, "sector", sep = " "),
+  group = str_c(group, "group", sep = " "),
+  industry = str_c(industry, "industry", sep = " "),
+  sub_industry = str_c(sub_industry, "subindustry", sep = " ")
+)
+
+# Sector
+org <- NULL
+plot_name <- NULL
+q <- NULL
+for (i in 1:length(unique(dash_counts$sector))){
+  
+  org <- unique(dash_counts$sector)
+  
+  table_name <- str_c(org[i], "correlation_table.pdf", sep = "_")
+  
+  q <- dash_counts |> filter(
+    sector == org[i]) |> 
+    select(revenue, overall_count:trust_nrc) |>
+    summarize(revenue = revenue,
+              overall_count = overall_count,
+              lnm_count = lnm_count,
+              clmd_count = clmd_count,
+              lnm_prop = round(lnm_prop, digits = 4),
+              clmd_prop = round(clmd_prop, digits = 4),
+              bing_pos_neg_prop = round(positive_bing/negative_bing, 4),
+              bing_valence_prop = round(sum(across(contains("_bing")))/overall_count, 4),
+              afinn_pos_neg_prop = round(sum(`1_afinn`, `2_afinn`, `3_afinn`,`4_afinn`,`5_afinn`)/sum(`-1_afinn`, `-2_afinn`, `-3_afinn`,`-4_afinn`,`-5_afinn`), 4),
+              afinn_valence_prop = round(sum(across(contains("_afinn")))/overall_count, 4),
+              loughran_pos_neg_prop = round(positive_loughran/negative_loughran, 4),
+              loughran_valence_prop = round(sum(across(contains("_loughran")))/overall_count, 4),
+              nrc_pos_neg_prop = round(positive_nrc/negative_nrc, 4),
+              nrc_valence_prop = round(sum(across(contains("_nrc")))/overall_count, 4),
+    ) |> cor()
+  
+  pdf(here::here("Figures", table_name))      # Export PDF
+  grid.table(q)
+  dev.off()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Visualize Revenue Over Time ---------------------------------------------
+# Remove data that no longer needs to be held in memory.
+rm(call_data, generic_stopwords)
+
+# Count marketing words based on lnm terms.
+lnm_tokens <- word_tokens |> 
+  # Make a year_quarter variable for easier time series.
+  unite(year_quarter, year, quarter, sep=":", remove = FALSE) |> 
+  mutate(
+    # Count rows within the nested data.
+    overall_words = map_dbl(words, ~.x |> nrow()),
+    # Count rows within the nested data after joining the dictionary.
+    marketing_words = map_dbl(words, ~.x |> semi_join(lnm, by = "word") |> nrow()),
+    # Format year_quarter.
+    year_quarter = yq(year_quarter), 
+    # Convert revenue to double.
+    revenue = as.double(revenue),
+    # Compute word proportions.
     word_prop = marketing_words / overall_words
   )
 
@@ -153,18 +309,18 @@ lnm_tokens
 
 # Count marketing words based on clmd terms.
 clmd_tokens <- word_tokens |> 
-  # Making year_quarter variable for easier time series.
+  # Make a year_quarter variable for easier time series.
   unite(year_quarter, year, quarter, sep=":", remove = FALSE) |> 
   mutate(
-    # Counting rows within the nested data.
+    # Count rows within the nested data.
     overall_words = map_dbl(words, ~.x |> nrow()),
-    # Counting rows within the nested data after joining the dictionary.
+    # Count rows within the nested data after joining the dictionary.
     marketing_words = map_dbl(words, ~.x |> semi_join(clmd, by = "word") |> nrow()),
-    # Formatting year_quarter.
+    # Format year_quarter.
     year_quarter = yq(year_quarter), 
-    # Converting revenue to double.
+    # Convert revenue to double.
     revenue = as.double(revenue),
-    # Word proportions.
+    # Compute word proportions.
     word_prop = marketing_words / overall_words
   )
 
@@ -176,6 +332,85 @@ clmd_tokens
 # clmd_tokens <- read_rds(here::here("Data", "clmd_tokens.rds"))
 # lnm_tokens <- read_rds(here::here("Data", "lnm_tokens.rds"))
 
+dash_tokens <- 
+  # TIME SERIES PREP
+  word_tokens |> 
+  # Making year_quarter variable for easier time series.
+  unite(year_quarter, year, quarter, sep=":", remove = FALSE) |> 
+  mutate(
+    # Counting rows within the nested data.
+    overall_count = map_dbl(words, ~.x |> nrow()),
+    # Counting rows within the nested data after joining the dictionary.
+    lnm_count = map_dbl(words, ~.x |> semi_join(lnm, by = "word") |> nrow()),
+    clmd_count = map_dbl(words, ~.x |> semi_join(clmd, by = "word") |> nrow()),
+    # Formatting year_quarter.
+    year_quarter = yq(year_quarter), 
+    # Converting revenue to double.
+    revenue = as.double(revenue),
+    # Word proportions.
+    lnm_prop =  lnm_count/overall_count,
+    clmd_count = clmd_count/overall_count
+  ) |> 
+  # NESTED MARKETING TERMS
+  rowwise() |> 
+  mutate(
+    # New nested tibbles containing counts of each word by dictionary
+    lnm_words = map(words, ~lnm |> rowwise() |>  mutate(x= (sum(.x %in% word)))),
+    clmd_words = map(words, ~clmd |> rowwise() |>  mutate(x= (sum(.x %in% word))))) |>
+  ungroup() |>
+  # BAD IDEA
+  mutate(sector = replace_na(sector, "N_A"),
+         group = replace_na(group, "N_A"),
+         industry = replace_na(industry, "N_A"),
+         sub_industry = replace_na(sub_industry, "N_A"))
+
+write_rds(dash_tokens, here::here("Data", "dash_tokens.rds"))
+
+
+
+
+
+
+
+# Graph loops
+
+dash_counts <- dash_counts |>  mutate(sector = str_replace_all(sector,"N/A", "N_A"),
+                                      group = str_replace_all(group, "N/A","N_A"),
+                                      industry = str_replace_all(industry,"N/A", "N_A"),
+                                      sub_industry = str_replace_all(sub_industry,"N/A", "N_A")) |> 
+  mutate(sector = str_replace_all(sector," ", "_"),
+         group = str_replace_all(group, " ","_"),
+         industry = str_replace_all(industry," ", "_"),
+         sub_industry = str_replace_all(sub_industry," ", "_"))
+
+
+# Sector
+org <- NULL
+plot_name <- NULL
+for (i in 1:length(unique(dash_counts$sector))){
+  
+  org <- unique(dash_counts$sector)
+  
+  plot_name <- str_c(org[i], "average_words.png", sep = "_")
+  
+  dash_counts |> filter(
+    sector == org[i]) |> 
+    group_by(year_quarter) |> 
+    summarize(mean_overall_count = mean(overall_count),
+              mean_lnm_count = mean(lnm_count),
+              mean_clmd_count = mean(clmd_count)) |> 
+    ggplot(aes(x = year_quarter)) +
+    geom_col(aes(y = mean_overall_count), fill = "gray", alpha = 0.25, position = "stack") +
+    geom_col(aes(y = mean_lnm_count), fill = "green", alpha = 0.5,  position = "stack") +
+    geom_col(aes(y = mean_clmd_count), fill = "blue", alpha = 0.5,  position = "stack") +
+    labs(title = plot_name, x = "Year_Quarter", y = "Average word count")
+  
+  ggsave(
+    filename = here::here("Figures", plot_name),
+    width = 10, height = 6, units = "in"
+  )
+}
+
 # L&M marketing word proportions over time.
 lnm_tokens |> 
   filter(revenue != 0) |>  
@@ -183,81 +418,146 @@ lnm_tokens |>
   geom_point(size=0.5)+
   geom_quantile(size=0.5) +
   geom_smooth(method=lm) +
-  ggtitle()
+  labs(title = "Proportion of Marketing Words to Overall Words (L&M)")
 
-# Save.
+ggsave(
+  filename = here::here("Figures", "word_proportions_lnm.png"),
+  width = 4, height = 7, units = "in"
+)
 
-# Revenue; both should be identical
-lnm_tokens %>% filter(revenue!=0) %>% 
-  ggplot(aes(x=year_quarter, y=revenue)) +
-  geom_point(size=0.5)+
-  geom_quantile(size=0.5) +
-  geom_smooth(method=lm)
-
-# Save.
 
 # Marketing word proportion--CLMD
 clmd_tokens %>% filter(revenue!=0) %>%
   ggplot(aes(x=year_quarter, y=word_prop)) +
   geom_point(size=0.5)+
   geom_quantile(size=0.5) +
-  geom_smooth(method=lm)
+  geom_smooth(method=lm) +
+  labs(title = "Proportion of Marketing Words to Overall Words (CLMD)")
+
+ggsave(
+  filename = here::here("Figures", "word_proportions_clmd.png"),
+  width = 4, height = 7, units = "in"
+)
 
 # Revenue; both should be identical
-clmd_tokens %>% filter(revenue!=0) %>%  
+lnm_tokens %>% filter(revenue!=0) %>% 
   ggplot(aes(x=year_quarter, y=revenue)) +
   geom_point(size=0.5)+
   geom_quantile(size=0.5) +
-  geom_smooth(method=lm)
+  geom_smooth(method=lm) +
+  labs(title = "Revenue Over Time by Year/Quarter")
+
+ggsave(
+  filename = here::here("Figures", "revenue_by_year_quarter.png"),
+  width = 4, height = 7, units = "in"
+)
 
 
 
 
 
-# Top words by year
 
-x <- lnm_tokens |> ungroup() |> rowwise() |> 
-  select(words, id) |>
-  mutate(words = list(words |> semi_join(lnm, by="word") |> group_by(word) |> count()))
+
+
+
+
+
+
+
+
+# Sector
+org <- NULL
+plot_name <- NULL
+for (i in 1:length(unique(dash_counts$sector))){
   
+  org <- unique(dash_counts$sector)
+  
+  plot_name <- str_c(org[i], "average_revenue.png", sep = "_")
+  
+  dash_counts |> filter(
+    sector == org[i]) |> 
+    group_by(year_quarter) |> 
+    summarize(mean_revenue = mean(revenue)) |> 
+    ggplot(aes(x = year_quarter)) +
+    geom_col(aes(y = mean_revenue), fill = "gray", alpha = 0.9) +
+    labs(title = plot_name, x = "Year_Quarter", y = "Average Revenue")
+  
+  ggsave(
+    filename = here::here("Figures", plot_name),
+    width = 10, height = 6, units = "in"
+  )
+}
 
 
-x |> unnest(words) |>
-  left_join(call_data, by="id") |> 
-  group_by(year) |> 
-  summarise(n = sum(n)) |> 
-  slice(1:20) %>% 
-  ungroup %>% 
-  mutate(word = reorder_within(word, n, year)) %>%
-  ggplot(aes(x = n, y = word)) +
-  geom_col() +
-  facet_wrap(~ year, scales="free") +
-  scale_y_reordered()
+
+
+# Sentiment ---------------------------------------------------------------
+# Import sentiment dictionaries, courtesy of tidytext.
+dash_tokens <- read_rds(here::here("Data", "dash_tokens.rds"))
+loughran <- get_sentiments("loughran") # Loughran and McDonald sentiment dictionary.
+
+# The following code matches word to their respective sentiments via the 
+# dictionaries and generates counts of each sentiment.
+
+# Start with overall word count, grouped by id.
+loughran_count <- overall_word_counts |> 
+  # Filter out words without sentiment value.
+  semi_join(loughran) |>
+  # Join sentiments to words. Words with multiple sentiments should be covered.
+  left_join(loughran) |> 
+  # Grouping by document id and sentiment.
+  group_by(id, sentiment) |> 
+  # Summing up the word counts in one column.
+  summarise(sen_sum = sum(n)) |> 
+  # Widening the data so each sentiment has its own column, each document is only 1 row.
+  pivot_wider(names_from = sentiment, values_from = sen_sum) |> 
+  # Ungrouping
+  ungroup() |> 
+  # Replacing all missing counts with 0.
+  mutate(across(.cols = everything(), ~replace_na(.x, 0))) |> 
+  # Renaming all sentiment columns to distinguish variable counts between dictionaries.
+  rename_with(~ str_c(.x, "_loughran"), .cols = -id)
+
+# Joining 
+dash_counts <- dash_tokens |> select(-c("data", "words")) |> 
+  left_join(loughran_count)
+
+# Adding strings to the end of each row to differentiate duplicate organization
+# levels e.g. Media group and Media industry
+dash_counts <- dash_counts |> mutate(
+  sector = str_c(sector, "sector", sep = " "),
+  group = str_c(group, "group", sep = " "),
+  industry = str_c(industry, "industry", sep = " "),
+  sub_industry = str_c(sub_industry, "subindustry", sep = " ")
+)
+
+# write_rds(dash_counts, here::here("Earnings_Call_Shiny", "dash_counts.rds"))
 
 
 
-test12 <- lnm |> 
-  summarise(n = map_df())
 
 
-  filter(stopwords==input$stopwords,
-         year >= input$from_year,
-         year <= input$to_year) %>% 
-  group_by(year) %>% 
-  slice(1:input$n_words) %>% 
-  ungroup %>% 
-  mutate(word = reorder_within(word, n, year)) %>%
-  ggplot(aes(x = n, y = word)) +
-  geom_col() +
-  facet_wrap(~ year, scales="free") +
-  scale_y_reordered()
 
+# Sector
+org <- NULL
+plot_name <- NULL
+for (i in 1:length(unique(dash_counts$sector))){
+  
+  org <- unique(dash_counts$sector)
+  
+  plot_name <- str_c(org[i], "afinn_sentiment.png", sep = "_")
 
-# Overall word count by year.
+  dash_counts |> filter(
+    sector == org[i]) |>
+    group_by(year_quarter) |>
+    summarize(across(.cols = contains("afinn"), ~mean(.x))) |>
+    pivot_longer(names_to = "valence", values_to = "n") |>
+    ggplot(aes(x = year_quarter, fill = valence)) +
+    geom_col(aes(y = n)) +
+    labs(title = plot_name, x = "Year_Quarter", y = "Average word count")
 
-# Correlation -------------------------------------------------------------
-# Before we get to regression, let's do a simple correlation between the proportion
-# of marketing terms (by CLMD and L&M) and the revenue. Produce this as a table, not
-# just an overall correlation, but looking at differences by the additional variables 
-# that we've included, starting with sector.
+  ggsave(
+    filename = here::here("Figures", plot_name),
+    width = 10, height = 6, units = "in")
+}
 
