@@ -4,13 +4,13 @@ library(shiny)
 library(plotly)
 library(tidyverse)
 library(ggplot2)
-
+library(rsconnect)
 
 # Load data, I need to make a separate file with all this at some point.
-dash_counts <- read_rds(here::here("Data", "dash_counts.rds")) |> ungroup() |> 
+dash_counts <- read_rds("dash_counts.rds") |> ungroup() |> 
   select(id:revenue, overall_count:clmd_prop, constraining_loughran:superfluous_loughran) |> 
-  mutate(loughran_positive_negative_prop = round(positive_loughran/negative_loughran, 4),
-         loughran_valenced_overall_ratio = round(sum(across(contains("_loughran")))/overall_count, 4))
+  mutate(positive_negative_prop = round(positive_loughran/negative_loughran, 4),
+         valenced_overall_ratio = round(sum(across(contains("_loughran")))/overall_count, 4))
 
 
 # Presorting choices so they're alphabetical later.
@@ -24,7 +24,7 @@ sub <- unique(dash_counts$sub_industry) |> sort()
 gics_select <- dash_counts |> select(sector:sub_industry)
 
 # Variable choices.
-var_select <- dash_counts |> select(revenue:loughran_valenced_overall_ratio)
+var_select <- dash_counts |> select(revenue:valenced_overall_ratio)
 
 # Reloading the package because they did it in a book.
 library(shiny)
@@ -121,7 +121,7 @@ ui <- fluidPage(
       varSelectInput(
         inputId = "varlevel2",
         label = "Select GICS Level--Graph 2",
-        data = dash_select),
+        data = gics_select),
       
       # Select either sum or mean of word counts.
       selectInput(
@@ -157,10 +157,12 @@ ui <- fluidPage(
     uiOutput(c("subset_gics1", "subset_gics2", "dictionary1", "dictionary2", "func1", "func2")),
     # Specify what plot 1 is in the server function.
     plotlyOutput("plot1"),
-    # Plot 2.
-    plotlyOutput("plot2"),
     # Table 1.
     tableOutput("table1"),
+    # Table 1.2.
+    # tableOutput("table1"),
+    # Plot 2.
+    plotlyOutput("plot2"),
     # Table 2.
     tableOutput("table2")
   )
@@ -246,7 +248,33 @@ output$plot1 <- renderPlotly({
                    ggplot(aes(x = year_quarter)) +
                    geom_col(aes(y = variable1), fill = "blue", alpha = 0.5 ))}
   })
+ 
+
+
+output$table1 <- renderTable({
+  req(input$subset_gics1, input$func1, input$dictionary1)
+  # Start with dictionary1()
+  dictionary1() |>
+    filter(org==input$subset_gics1) |>
+    filter(year >= input$from_year1,
+           year <= input$to_year1) |>
+    # For lagged variable, we need to worry about properly ordering the
+    # calls. Here, we sort by company and arrange by year_quarter.
+    group_by(gvkey) |> 
+    arrange(year_quarter, .by_group = TRUE) |> 
+    # Lagging variable by inputted number of lags
+    mutate(variable1 = lag(variable1, input$lag1)) |>
+    filter(is.na(variable1) == FALSE) |>
+    ungroup() |> 
+    select(revenue:clmd_count, positive_negative_prop, valenced_overall_ratio, variable1) |> 
+    # No row names which is a bummer, haven't looked much into it though.
+    cor() |> 
+    as.data.frame()|> 
+    rownames_to_column() 
   
+})
+
+ 
 # Exact same as plot 1.
 output$plot2 <- renderPlotly({
   req(input$subset_gics2, input$func2, input$dictionary2)
@@ -272,50 +300,32 @@ output$plot2 <- renderPlotly({
   })
   
   
-  
-
-output$table1 <- renderTable(
-  # Start with dictionary1()
-  dictionary1() |>
-    filter(org==input$subset_gics1) |>
-      filter(year >= input$from_year1,
-             year <= input$to_year1) |>
-      # For lagged variable, we need to worry about properly ordering the
-      # calls. Here, we sort by company and arrange by year_quarter.
-      group_by(gvkey) |> 
-      arrange(year_quarter, .by_group = TRUE) |> 
-      # Lagging variable by inputted number of lags
-      mutate(lagged_variable1 = lag(variable1, input$lag1)) |>
-      filter(is.na(lagged_variable1) == FALSE) |>
-      ungroup() |> 
-      select(revenue:clmd_count, loughran_positive_negative_prop, loughran_valenced_overall_ratio, variable1, lagged_variable1) |> 
-      # No row names which is a bummer, haven't looked much into it though.
-      cor()
-    )
-  
 
 # Ditto as above
-output$table2 <- renderTable(
+output$table2 <- renderTable({
+  req(input$subset_gics2, input$func2, input$dictionary2)
   dictionary2() |>
     filter(org==input$subset_gics2) |>
       filter(year >= input$from_year2,
              year <= input$to_year2) |> 
       group_by(gvkey) |> 
       arrange(year_quarter, .by_group = TRUE) |> 
-      mutate(lagged_variable2 = lag(variable2, input$lag2)) |>
-      filter(is.na(lagged_variable2) == FALSE) |>
+      mutate(variable2 = lag(variable2, input$lag2)) |>
+      filter(is.na(variable2) == FALSE) |>
       ungroup() |> 
-      select(revenue:clmd_count, loughran_positive_negative_prop, loughran_valenced_overall_ratio, variable2, lagged_variable2) |> 
-      cor()
-                                  
- )
+      select(revenue:clmd_count, positive_negative_prop, valenced_overall_ratio, variable2) |> 
+      cor() |> 
+    as.data.frame() |> 
+    rownames_to_column() 
+  
+  })
  
  
  
-}
+
 
 
 # Ez Money
+}
 shinyApp(ui, server)
-
 
