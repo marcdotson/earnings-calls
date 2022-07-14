@@ -115,34 +115,43 @@ gics <- standards |>
     sub_industry = `subindustry name`
   )
 
-# Import Compustat fundamentals quarterly.
+# Import Compustat fundamentals quarterly with the following filters:
+# - Consolidation Level: C
+# - Industry Format: INDL
+# - Data Format: STD
+# - Population Source: D
+# - Quarter Type: Fiscal View
+# - Currency: USD
+# - Company Status: Active and Inactive
 firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")) |> 
   mutate(
     gvkey = str_pad(gvkey, 6, side = c("left"), pad = "0"),
+    name = conm,
     year = fyearq,
     quarter = fqtr,
-    revenue = revtq
+    revenue = revtq,
+    earnings = epsfxq
   ) |> 
   # Use the GICS standards to get sector, group, industry, and sub-industry names.
   left_join(select(gics, gsector, sector) |> distinct(), by = "gsector") |> 
   left_join(select(gics, ggroup, group) |> distinct(), by = "ggroup") |> 
   left_join(select(gics, gind, industry) |> distinct(), by = "gind") |> 
   left_join(select(gics, gsubind, sub_industry) |> distinct(), by = "gsubind") |> 
-  select(gvkey, year, quarter, revenue, sector, group, industry, sub_industry)
+  select(gvkey, tic, name, year, quarter, revenue, earnings, sector, group, industry, sub_industry)
 
 firm_data
 
 # Join Data ---------------------------------------------------------------
 # Join the earnings calls and firm performance data.
-call_data <- call_data |> 
+call_data <- call_data |>
   inner_join(firm_data, by = c("gvkey", "year", "quarter")) |> 
   mutate(id = row_number()) |> 
   select(
-    id, gvkey, sector, group, industry, sub_industry, 
-    call_date, year, quarter, revenue, title, text
+    id, gvkey, tic, name, sector, group, industry, sub_industry, 
+    call_date, year, quarter, revenue, earnings, title, text
   ) |> 
-  # Drop any observations that don't have revenue data.
-  drop_na(revenue)
+  # Drop any observations that don't have revenue or earnings data.
+  drop_na(revenue, earnings)
 
 call_data
 
