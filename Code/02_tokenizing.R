@@ -4,7 +4,7 @@ library(tidyverse)
 library(tidytext)
 
 # Import call data.
-call_data <- read_rds(here::here("Data", "call_data.rds")) |> 
+call_data <- read_rds(here::here("Data", "call_data.rds")) |>
   mutate(
     title_text = str_c(title, text, " "),                 # Combine title and text.
     title_text = str_replace_all(text, "[:punct:]", " ")  # Strip punctuation to deal with contractions.
@@ -23,8 +23,7 @@ generic_stopwords <- read_rds(here::here("Data", "generic_stopwords_long.rds"))
 generic_stopwords
 
 # Tokenize call data in sets to avoid memory loss and limits.
-# If we need to revisit tokenizing, we can parallelize this code instead
-# of splitting it into separate data sets that we save and then delete.
+# (If we need to revisit tokenizing, consider how to parallelize.)
 num_splits <- 30
 for (i in seq_along(1:num_splits)) {
   # Specify the start and end rows for each of the sets.
@@ -68,8 +67,8 @@ rm(call_data, generic_stopwords)
 # Re-import complete call_data except for text.
 call_data <- read_rds(here::here("Data", "call_data.rds")) |> 
   select(
-    id, gvkey, sector, group, industry, sub_industry, 
-    call_date, year, quarter, revenue, title
+    id, gvkey, tic, name, sector, group, industry, sub_industry, 
+    call_date, year, quarter, revenue, earnings, title
   )
 
 # Bind sliced tokenized data.
