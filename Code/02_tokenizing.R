@@ -66,10 +66,7 @@ rm(call_data, generic_stopwords)
 
 # Re-import complete call_data except for text.
 call_data <- read_rds(here::here("Data", "call_data.rds")) |> 
-  select(
-    id, gvkey, tic, name, sector, group, industry, sub_industry, 
-    call_date, year, quarter, revenue, earnings, title
-  )
+  select(-text)
 
 # Bind sliced tokenized data.
 word_tokens <- NULL
