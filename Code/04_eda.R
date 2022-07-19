@@ -152,8 +152,6 @@ negative <- get_sentiments("loughran") |>
   filter(sentiment == "negative") |> 
   select(word)
 
-# Compute Q-1 EPS as a proxy for how well the company under performed estimates.
-
 # Compute counts by id of marketing terms using lnm and clmd.
 id_counts <- word_tokens |> 
   # Make year_quarter variable for easier time series plots.
@@ -180,23 +178,88 @@ id_counts
 # # write_rds(id_counts, here::here("Data", "id_counts.rds"))
 # id_counts <- read_rds(here::here("Data", "id_counts.rds"))
 
+
+# FACET CORRELATION MATRICES...
+
+
+# Indicate GICS subset.
+ind_overa <- 0
+ind_sectr <- 1
+ind_group <- 0
+ind_indus <- 0
+ind_subin <- 0
+
+# Specify name conditioned on indicator flags.
+if (ind_overa == 1) name <- "overall"
+if (ind_sectr == 1) name <- "sector"
+if (ind_group == 1) name <- "group"
+if (ind_indus == 1) name <- "industry"
+if (ind_subin == 1) name <- "sub_industry"
+
 # Visualize the correlation matrix.
-id_counts |> 
-  select(revenue, earnings, n_lnm:prop_neg) |> 
-  correlate() |> 
-  stretch() |>
-  ggplot(aes(x = x, y = y, fill = r)) +
-  geom_tile() +
-  geom_text(aes(label = round(r, 2))) +
-  scale_fill_gradient(low = "#FFFFFF", high = "#56B1F7") +
-  scale_x_discrete(expand=c(0.001,0.001)) +
-  scale_y_discrete(expand=c(0.001,0.001)) +
-  labs(
-    title = "Upper-Level Coefficient Matrix Estimates",
-    subtitle = "Geolocation, Stated, and Demographics Covariates",
-    x = "Covariates",
-    y = "Attribute Levels"
-  )
+if (ind_overa == 1) {
+  id_counts |> 
+    select(revenue, earnings, forecast, difference, n_lnm:prop_neg) |> 
+    correlate() |> 
+    stretch() |>
+    ggplot(aes(x = x, y = y, fill = r)) +
+    geom_tile() +
+    geom_text(aes(label = round(r, 2))) +
+    scale_fill_gradient2(
+      low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+      limits = c(-1, 1)
+    ) +
+    scale_x_discrete(expand=c(0.001,0.001)) +
+    scale_y_discrete(expand=c(0.001,0.001)) +
+    labs(
+      title = "Correlation Matrix",
+      subtitle = "Overall Correlation",
+      x = "", y = ""
+    )
+}
+if (ind_overa != 1) {
+  id_counts |> 
+    group_by(.data[[name]]) |> 
+    select(revenue, earnings, forecast, difference, n_lnm:prop_neg) |> 
+    ungroup() |> 
+    correlate() |> 
+    stretch() |>
+    ggplot(aes(x = x, y = y, fill = r)) +
+    geom_tile() +
+    geom_text(aes(label = round(r, 2))) +
+    facet_wrap(
+      ~ .data[[name]], scales = "free",
+      nrow = round(length(unique(id_counts[[name]])) / 3),
+      ncol = round(length(unique(id_counts[[name]])) / 4)
+    ) +
+    scale_fill_gradient2(
+      low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+      limits = c(-1, 1)
+    ) +
+    scale_x_discrete(expand=c(0.001,0.001)) +
+    scale_y_discrete(expand=c(0.001,0.001)) +
+    labs(
+      title = "Correlation Matrix",
+      subtitle = str_c("Correlation by ", str_to_title(name)),
+      x = "", y = ""
+    )
+}
+
+ggsave(
+  filename = here::here("Figures", str_c(name, "-word_counts.png")),
+  width = 10, height = 12, units = "in", limitsize = FALSE
+)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
