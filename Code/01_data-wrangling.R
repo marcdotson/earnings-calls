@@ -129,29 +129,48 @@ firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")
     name = conm,
     year = fyearq,
     quarter = fqtr,
-    revenue = revtq,
-    earnings = epsfxq
+    revenue = revtq
   ) |> 
   # Use the GICS standards to get sector, group, industry, and sub-industry names.
   left_join(select(gics, gsector, sector) |> distinct(), by = "gsector") |> 
   left_join(select(gics, ggroup, group) |> distinct(), by = "ggroup") |> 
   left_join(select(gics, gind, industry) |> distinct(), by = "gind") |> 
   left_join(select(gics, gsubind, sub_industry) |> distinct(), by = "gsubind") |> 
-  select(gvkey, tic, name, year, quarter, revenue, earnings, sector, group, industry, sub_industry)
+  select(gvkey, tic, name, year, quarter, revenue, sector, group, industry, sub_industry)
 
 firm_data
 
+# Expected Firm Performance -----------------------------------------------
+# Import analyst forecasts from IBES (see Python code for query and link
+# to Compustat data).
+ibes_data <- read_csv(here::here("Data", "IBES.csv")) |> 
+  mutate(
+    gvkey = str_pad(gvkey, 6, side = c("left"), pad = "0"),
+    year = fyearq,
+    quarter = fqtr,
+    earnings = act,
+    forecast = medest
+  ) |> 
+  select(gvkey, year, quarter, earnings, forecast, contains("sue"))
+
+ibes_data
+
 # Join Data ---------------------------------------------------------------
-# Join the earnings calls and firm performance data.
+# Join the earnings calls, firm performance, and expected performance data.
 call_data <- call_data |>
   inner_join(firm_data, by = c("gvkey", "year", "quarter")) |> 
-  mutate(id = row_number()) |> 
+  inner_join(ibes_data, by = c("gvkey", "year", "quarter")) |> 
+  mutate(
+    id = row_number(),
+    difference = earnings - forecast
+  ) |> 
   select(
     id, gvkey, tic, name, sector, group, industry, sub_industry, 
-    call_date, year, quarter, revenue, earnings, title, text
+    call_date, year, quarter, revenue, earnings, forecast, difference,
+    title, text, contains("sue")
   ) |> 
-  # Drop any observations that don't have revenue or earnings data.
-  drop_na(revenue, earnings)
+  # Drop any observations that don't have outcome data.
+  drop_na(revenue, earnings, forecast)
 
 call_data
 
