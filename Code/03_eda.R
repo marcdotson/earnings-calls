@@ -6,15 +6,15 @@ library(tidytext)
 library(textdata)
 library(corrr)
 
-# Import word tokens and marketing dictionaries.
+# Import word tokens and the marketing dictionary validated from 
+# Loughran and McDonald's financial dictionary.
 word_tokens <- read_rds(here::here("Data", "word_tokens.rds"))
-clmd <- read_rds(here::here("Data", "clmd.rds")) # Common Language Marketing Dictionary.
-lnm <- read_rds(here::here("Data", "lnm.rds"))   # Marketing terms from Loughran and McDonald.
+lnm <- read_rds(here::here("Data", "lnm.rds"))
 
 # Indicate GICS subset.
-ind_overa <- 1
+ind_overa <- 0
 ind_sectr <- 0
-ind_group <- 0
+ind_group <- 1
 ind_indus <- 0
 ind_subin <- 0
 
@@ -72,41 +72,7 @@ ggsave(
   width = 10, height = 12, units = "in", limitsize = FALSE
 )
 
-# Visualize marketing terms using clmd.
-if (ind_overa == 1) {
-  word_counts |> 
-    semi_join(clmd, by = "word") |> 
-    arrange(desc(n)) |> 
-    slice(1:n_words) |> 
-    mutate(word = fct_reorder(word, n)) |> 
-    ggplot(aes(x = n, y = word)) +
-    geom_col() +
-    labs(title = "Top Overall Marketing Terms (CLMD)")
-}
-if (ind_overa != 1) {
-  word_counts |> 
-    semi_join(clmd, by = "word") |> 
-    group_by(.data[[name]]) |> 
-    top_n(n_words, n) |> 
-    ungroup() |> 
-    mutate(word = reorder_within(word, n, .data[[name]])) |> 
-    ggplot(aes(x = n, y = word, fill = as.factor(.data[[name]]))) +
-    geom_col(show.legend = FALSE) +
-    facet_wrap(
-      ~ .data[[name]], scales = "free",
-      nrow = round(length(unique(word_counts[[name]])) / 3),
-      ncol = round(length(unique(word_counts[[name]])) / 4)
-    ) +
-    scale_y_reordered() +
-    labs(title = str_c("Top Marketing Terms (CLMD) by ", str_to_title(name)))
-}
-
-ggsave(
-  filename = here::here("Figures", str_c(name, "-marketing_terms_clmd.png")),
-  width = 10, height = 12, units = "in", limitsize = FALSE
-)
-
-# Visualize marketing terms using lnm.
+# Visualize marketing terms.
 if (ind_overa == 1) {
   word_counts |> 
     semi_join(lnm, by = "word") |> 
@@ -115,7 +81,7 @@ if (ind_overa == 1) {
     mutate(word = fct_reorder(word, n)) |> 
     ggplot(aes(x = n, y = word)) +
     geom_col() +
-    labs(title = "Top Overall Marketing Terms (L&M)")
+    labs(title = "Top Overall Marketing Terms")
 }
 if (ind_overa != 1) {
   word_counts |> 
@@ -132,11 +98,11 @@ if (ind_overa != 1) {
       ncol = round(length(unique(word_counts[[name]])) / 4)
     ) +
     scale_y_reordered() +
-    labs(title = str_c("Top Marketing Terms (L&M) by ", str_to_title(name)))
+    labs(title = str_c("Top Marketing Terms by ", str_to_title(name)))
 }
 
 ggsave(
-  filename = here::here("Figures", str_c(name, "-marketing_terms_lnm.png")),
+  filename = here::here("Figures", str_c(name, "-marketing_terms.png")),
   width = 10, height = 12, units = "in", limitsize = FALSE
 )
 
@@ -152,7 +118,7 @@ negative <- get_sentiments("loughran") |>
   filter(sentiment == "negative") |> 
   select(word)
 
-# Compute counts by id of marketing terms using lnm and clmd.
+# Compute counts by id of marketing terms.
 id_counts <- word_tokens |> 
   # Make year_quarter variable for easier time series plots.
   unite(year_quarter, year, quarter, sep=":", remove = FALSE) |> 
