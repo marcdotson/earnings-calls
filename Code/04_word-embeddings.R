@@ -91,10 +91,12 @@ plan(multisession)  ## for parallel processing
 # - Removing words less than...1000 occurrences?!
 # Need to parallelize AND split to make this work?
 
-tidy_pmi <- word_tokens %>%
-  mutate(words = future_map(words, slide_windows, 2L))
-  unnest(words) %>%
-  unite(window_id, id, window_id) %>%
+# tidy_pmi <- word_tokens |> 
+  mutate(words = future_map(words, slide_windows, 2L)) |> 
+
+tidy_pmi <- tidy_pmi |> 
+  unnest(words) |> 
+  unite(window_id, id, window_id) |> 
   pairwise_pmi(word, window_id)
 
 tidy_pmi |> 
