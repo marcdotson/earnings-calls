@@ -227,27 +227,30 @@ ggsave(
   width = 20, height = ifelse(ind_group == 0, 20, 35), units = "in", limitsize = FALSE
 )
 
-# # Marketing word proportion.
-# clmd_tokens %>% filter(revenue!=0) %>%
-#   ggplot(aes(x=year_quarter, y=word_prop)) +
-#   geom_point(size=0.5)+
-#   geom_quantile(size=0.5) +
-#   geom_smooth(method=lm) +
-#   labs(title = "Proportion of Marketing Words to Overall Words")
-# 
+id_counts
+
+# Proportion of marketing terms over time.
+id_counts |> 
+  filter(revenue!=0) |>
+  ggplot(aes(x = year_quarter, y = prop_mktg)) +
+  geom_point(size = 0.5)+
+  geom_quantile(size = 0.5) +
+  geom_smooth(method = lm) +
+  labs(title = "Proportion of Marketing Terms Over Time")
+
 # ggsave(
 #   filename = here::here("Figures", "word_proportions_clmd.png"),
 #   width = 4, height = 7, units = "in"
 # )
-# 
-# # Revenue; both should be identical
-# lnm_tokens %>% filter(revenue!=0) %>% 
-#   ggplot(aes(x=year_quarter, y=revenue)) +
-#   geom_point(size=0.5)+
-#   geom_quantile(size=0.5) +
-#   geom_smooth(method=lm) +
-#   labs(title = "Revenue Over Time by Year/Quarter")
-# 
+
+# Revenue; both should be identical
+lnm_tokens %>% filter(revenue!=0) %>%
+  ggplot(aes(x=year_quarter, y=revenue)) +
+  geom_point(size=0.5)+
+  geom_quantile(size=0.5) +
+  geom_smooth(method=lm) +
+  labs(title = "Revenue Over Time by Year/Quarter")
+
 # ggsave(
 #   filename = here::here("Figures", "revenue_by_year_quarter.png"),
 #   width = 4, height = 7, units = "in"
