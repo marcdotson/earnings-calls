@@ -5,13 +5,10 @@ library(plotly)
 library(tidyverse)
 library(ggplot2)
 library(rsconnect)
+library(corrr)
 
 # Load data, I need to make a separate file with all this at some point.
-dash_counts <- read_rds("dash_counts.rds") |> ungroup() |> 
-  select(id:revenue, overall_count:clmd_prop, constraining_loughran:superfluous_loughran) |> 
-  mutate(positive_negative_prop = round(positive_loughran/negative_loughran, 4),
-         valenced_overall_ratio = round(sum(across(contains("_loughran")))/overall_count, 4))
-
+dash_counts <- read_rds(here::here("Data", "dash_counts_new.rds"))
 
 # Presorting choices so they're alphabetical later.
 d <- unique(dash_counts$year) |> sort()
@@ -24,7 +21,7 @@ sub <- unique(dash_counts$sub_industry) |> sort()
 gics_select <- dash_counts |> select(sector:sub_industry)
 
 # Variable choices.
-var_select <- dash_counts |> select(revenue:valenced_overall_ratio)
+var_select <- dash_counts |> select(revenue, earnings, forecast, difference, n_lnm:sentiment_index)
 
 # Reloading the package because they did it in a book.
 library(shiny)
@@ -56,14 +53,14 @@ ui <- fluidPage(
       ),
       
       # Select number of lag periods for variable of interest.
-      numericInput(
-        inputId = "lag1",
-        label = "Select Variable Lag in Quarters--Table 1",
-        value = 0,
-        min=0,
-        max=8
-        ),
-      
+      # numericInput(
+      #   inputId = "lag1",
+      #   label = "Select Variable Lag in Quarters--Table 1",
+      #   value = 0,
+      #   min=0,
+      #   max=8
+      #   ),
+      # 
       # Select GICS organization level.
       varSelectInput(
         inputId = "varlevel1",
@@ -108,15 +105,15 @@ ui <- fluidPage(
         data = var_select
       ),
       
-      # Select number of lag periods for variable of interest.
-      numericInput(
-        inputId = "lag2",
-        label = "Select Variable Lag in Quarters--Table 2",
-        value = 0,
-        min=0,
-        max=8
-      ),
-      
+      # # Select number of lag periods for variable of interest.
+      # numericInput(
+      #   inputId = "lag2",
+      #   label = "Select Variable Lag in Quarters--Table 2",
+      #   value = 0,
+      #   min=0,
+      #   max=8
+      # ),
+      # 
       # Select GICS organization level.
       varSelectInput(
         inputId = "varlevel2",
@@ -155,16 +152,18 @@ ui <- fluidPage(
   mainPanel(
     # Not actually sure what this does.
     uiOutput(c("subset_gics1", "subset_gics2", "dictionary1", "dictionary2", "func1", "func2")),
+    textOutput("text1"),
     # Specify what plot 1 is in the server function.
     plotlyOutput("plot1"),
     # Table 1.
-    tableOutput("table1"),
+    plotOutput("table1"),
     # Table 1.2.
     # tableOutput("table1"),
     # Plot 2.
+    textOutput("text2"),
     plotlyOutput("plot2"),
     # Table 2.
-    tableOutput("table2")
+    plotOutput("table2")
   )
 )
 )))
@@ -218,7 +217,19 @@ dictionary2 <- reactive({
   )
 })
 
-# Plotly allows for some cool interactivity, at the expense of performance.
+
+
+output$text1 <- renderText({ 
+  req(input$subset_gics1, input$func1, input$dictionary1)
+  str_c(
+    "Number of Firms: ",
+    dictionary1() |> 
+    filter(org==input$subset_gics1) |> 
+    filter(year >= input$from_year1,
+           year <= input$to_year1) |> 
+    distinct(gvkey) |> 
+    count() |> 
+    pull())})
 
 output$plot1 <- renderPlotly({
   # Required inputs before app tries to produce output.
@@ -251,30 +262,59 @@ output$plot1 <- renderPlotly({
  
 
 
-output$table1 <- renderTable({
+output$table1 <- renderPlot({
   req(input$subset_gics1, input$func1, input$dictionary1)
   # Start with dictionary1()
   dictionary1() |>
-    filter(org==input$subset_gics1) |>
-    filter(year >= input$from_year1,
-           year <= input$to_year1) |>
-    # For lagged variable, we need to worry about properly ordering the
-    # calls. Here, we sort by company and arrange by year_quarter.
-    group_by(gvkey) |> 
-    arrange(year_quarter, .by_group = TRUE) |> 
-    # Lagging variable by inputted number of lags
-    mutate(variable1 = lag(variable1, input$lag1)) |>
-    filter(is.na(variable1) == FALSE) |>
-    ungroup() |> 
-    select(revenue:clmd_count, positive_negative_prop, valenced_overall_ratio, variable1) |> 
-    # No row names which is a bummer, haven't looked much into it though.
-    cor() |> 
-    as.data.frame()|> 
-    rownames_to_column() 
-  
+    filter(org==input$subset_gics1) |> 
+    select(revenue, earnings, forecast, difference, n_lnm:sentiment_index) |> 
+    correlate() |> 
+    stretch() |>
+    ggplot(aes(x = x, y = y, fill = r)) +
+    geom_tile() +
+    geom_text(aes(label = round(r, 2))) +
+    scale_fill_gradient2(
+      low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+      limits = c(-1, 1)
+    ) +
+    scale_x_discrete(expand=c(0.001,0.001)) +
+    scale_y_discrete(expand=c(0.001,0.001)) +
+    labs(
+      title = "Correlation Matrix",
+      x = "", y = ""
+    )
+    # filter(org==input$subset_gics1) |>
+    # filter(year >= input$from_year1,
+    #        year <= input$to_year1) |>
+    # # For lagged variable, we need to worry about properly ordering the
+    # # calls. Here, we sort by company and arrange by year_quarter.
+    # group_by(gvkey) |> 
+    # arrange(year_quarter, .by_group = TRUE) |> 
+    # # Lagging variable by inputted number of lags
+    # mutate(variable1 = lag(variable1, input$lag1)) |>
+    # filter(is.na(variable1) == FALSE) |>
+    # ungroup() |> 
+    # select(revenue:clmd_count, positive_negative_prop, valenced_overall_ratio, variable1) |> 
+    # # No row names which is a bummer, haven't looked much into it though.
+    # cor() |> 
+    # as.data.frame()|> 
+    # rownames_to_column() 
+    # 
 })
 
- 
+
+output$text2 <- renderText({ 
+  req(input$subset_gics2, input$func2, input$dictionary2)
+  str_c(
+    "Number of Firms: ",
+    dictionary2() |> 
+      filter(org==input$subset_gics2) |> 
+      filter(year >= input$from_year2,
+             year <= input$to_year2) |> 
+      distinct(gvkey) |> 
+      count() |> 
+      pull())})
+
 # Exact same as plot 1.
 output$plot2 <- renderPlotly({
   req(input$subset_gics2, input$func2, input$dictionary2)
@@ -302,21 +342,32 @@ output$plot2 <- renderPlotly({
   
 
 # Ditto as above
-output$table2 <- renderTable({
+output$table2 <- renderPlot({
   req(input$subset_gics2, input$func2, input$dictionary2)
   dictionary2() |>
-    filter(org==input$subset_gics2) |>
-      filter(year >= input$from_year2,
-             year <= input$to_year2) |> 
-      group_by(gvkey) |> 
-      arrange(year_quarter, .by_group = TRUE) |> 
-      mutate(variable2 = lag(variable2, input$lag2)) |>
-      filter(is.na(variable2) == FALSE) |>
-      ungroup() |> 
-      select(revenue:clmd_count, positive_negative_prop, valenced_overall_ratio, variable2) |> 
-      cor() |> 
-    as.data.frame() |> 
-    rownames_to_column() 
+    filter(org==input$subset_gics2) |> 
+    select(revenue, earnings, forecast, difference, n_lnm:sentiment_index) |> 
+    correlate() |> 
+    stretch() |>
+    ggplot(aes(x = x, y = y, fill = r)) +
+    geom_tile() +
+    geom_text(aes(label = round(r, 2))) +
+    facet_wrap(
+      ~ .data[[name]], scales = "free",
+      nrow = round(length(unique(id_counts[[name]])) / 3),
+      ncol = round(length(unique(id_counts[[name]])) / 4)
+    ) +
+    scale_fill_gradient2(
+      low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+      limits = c(-1, 1)
+    ) +
+    scale_x_discrete(expand=c(0.001,0.001)) +
+    scale_y_discrete(expand=c(0.001,0.001)) +
+    labs(
+      title = "Correlation Matrix",
+      subtitle = str_c("Correlation by ", str_to_title(name)),
+      x = "", y = ""
+    )
   
   })
  
