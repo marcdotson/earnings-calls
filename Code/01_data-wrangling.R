@@ -8,6 +8,9 @@ transcripts <- read_rds(here::here("Data", "transcripts.rds")) |>
   tibble() |> 
   separate(doc_id, into = c("gvkey", "call_date", "title"), sep = "_")
 
+# Import copywrite statements to exclude from the transcripts.
+copywrite <- read_rds(here::here("Data", "copywrite_statements.rds"))
+
 # Clean and filter so we have transcripts that have the correct quarter and year.
 call_data <- transcripts |> 
   mutate(
@@ -83,6 +86,14 @@ call_data <- transcripts |>
     year = ifelse(is.na(year) & quarter %in% c(1, 2), lubridate::year(call_date) - 1, year),
     year = ifelse(is.na(year) & quarter %in% c(3, 4), lubridate::year(call_date), year)
   ) |>
+  # Remove extraneous copywrite statements.
+  mutate(
+    text = str_remove_all(text, copywrite[1]),
+    text = str_remove_all(text, copywrite[2]),
+    text = str_remove_all(text, copywrite[3]),
+    text = str_remove_all(text, copywrite[4]),
+    text = str_remove_all(text, copywrite[5])
+  ) |> 
   drop_na(quarter) |>
   drop_na(year) |> 
   # Finally, ensure UTF-8 encoding for the titles and text.
@@ -160,17 +171,30 @@ ibes_data
 call_data <- call_data |>
   inner_join(firm_data, by = c("gvkey", "year", "quarter")) |> 
   inner_join(ibes_data, by = c("gvkey", "year", "quarter")) |> 
+  # Drop any observations that don't have outcome data.
+  drop_na(revenue, earnings, forecast) |> 
+  # Add an id and differences.
   mutate(
     id = row_number(),
     difference = earnings - forecast
+  ) |>
+  # Make year_quarter variable to arrange data chronologically by firm.
+  unite(year_quarter, year, quarter, remove = FALSE) |> 
+  # Lead outcome data by firm.
+  group_by(gvkey) |> 
+  arrange(year_quarter) |> 
+  mutate(
+    revenue_lead = lead(revenue, order_by = year_quarter),
+    earnings_lead = lead(earnings, order_by = year_quarter),
+    difference_lead = lead(difference, order_by = year_quarter)
   ) |> 
+  ungroup() |>
+  # Select variables in order.
   select(
-    id, gvkey, tic, name, sector, group, industry, sub_industry, 
+    id, gvkey, tic, name, sector, group, industry, sub_industry,
     call_date, year, quarter, revenue, earnings, forecast, difference,
-    title, text, contains("sue")
-  ) |> 
-  # Drop any observations that don't have outcome data.
-  drop_na(revenue, earnings, forecast)
+    contains("lead"), title, text, contains("sue")
+  )
 
 call_data
 
