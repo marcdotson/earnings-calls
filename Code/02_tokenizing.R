@@ -4,7 +4,7 @@ library(tidyverse)
 library(tidytext)
 
 # Import call data.
-call_data <- call_data |> #read_rds(here::here("Data", "call_data.rds")) |>
+call_data <- read_rds(here::here("Data", "call_data.rds")) |>
   mutate(
     title_text = str_c(title, text, " "),                 # Combine title and text.
     title_text = str_replace_all(text, "[:punct:]", " ")  # Strip punctuation to deal with contractions.
