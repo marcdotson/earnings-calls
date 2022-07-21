@@ -94,6 +94,9 @@ plan(multisession)  ## for parallel processing
 # tidy_pmi <- word_tokens |> 
   mutate(words = future_map(words, slide_windows, 2L)) |> 
 
+  
+#### SELECT BEFORE PMI??
+  
 tidy_pmi <- tidy_pmi |> 
   unnest(words) |> 
   unite(window_id, id, window_id) |> 
