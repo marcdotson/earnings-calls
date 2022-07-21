@@ -111,6 +111,22 @@ ggsave(
 # Remove data that no longer needs to be held in memory.
 rm(word_counts)
 
+# Import the top advertisers from each calendar year.
+top_ads <- read_csv(here::here("Data", "Top Advertisers.csv")) |> 
+  mutate(
+    name = str_to_upper(name),
+    name = str_remove(name, "\\.")
+  )
+
+top_ads |> select(name) |> deframe() |> unique() |> tibble(name = _) |>
+  left_join(
+    word_tokens |> select(name) |> deframe() |> unique() |> tibble(name = _, value = 1),
+    by = "name"
+  ) -> test
+
+word_tokens |> select(name) |> deframe() |> unique() |> tibble(name = _) |> write_csv(here::here("Private", "names.csv"))
+test[is.na(test$value),] |> write_csv(here::here("Private", "no_join.csv"))
+
 # Import and transform the L&M sentiment dictionary.
 positive <- get_sentiments("loughran") |> 
   filter(sentiment == "positive") |> 
@@ -160,7 +176,7 @@ if (ind_group == 1) name <- "group"
 # Visualize the correlation matrix.
 if (ind_overa == 1) {
   id_counts |> 
-    select(revenue, earnings, difference, n_mktg:prop_neg) |> 
+    select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |> 
     correlate() |> 
     stretch() |>
     ggplot(aes(x = x, y = y, fill = r)) +
@@ -177,14 +193,16 @@ if (ind_overa == 1) {
       subtitle = "Overall Correlation",
       x = "", y = ""
     )
+  # Specify plot dimensions.
+  width <- 12; height <- 12
 }
 if (ind_overa != 1) {
-  group_names <- unique(id_counts[[name]])
+  group_names <- unique(id_counts[[name]])[!map_lgl(unique(id_counts[[name]]), ~.x |> is.na())]
   plot_list <- vector(mode = "list", length = length(group_names))
   for (i in seq_along(1:length(group_names))) {
-     plot_list[[i]] <- id_counts |> 
+    plot_list[[i]] <- id_counts |> 
       filter(.data[[name]] == group_names[i]) |>
-      select(revenue, earnings, difference, n_mktg:prop_neg) |>
+      select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |>
       correlate() |> 
       stretch() |>
       ggplot(aes(x = x, y = y, fill = r)) +
@@ -210,6 +228,8 @@ if (ind_overa != 1) {
     ( plot_list[[4]] | plot_list[[5]] | plot_list[[6]] ) / 
     ( plot_list[[7]] | plot_list[[8]] | plot_list[[9]] ) / 
     ( plot_list[[10]] | plot_list[[11]] | grid::textGrob(" ") )
+    # Specify plot dimensions.
+    width <- 24; height <- 24
   }
   if (ind_group == 1) {
     ( plot_list[[1]] | plot_list[[2]] | plot_list[[3]] ) / 
@@ -219,15 +239,15 @@ if (ind_overa != 1) {
     ( plot_list[[13]] | plot_list[[14]] | plot_list[[15]] ) /
     ( plot_list[[16]] | plot_list[[17]] | plot_list[[18]] ) /
     ( plot_list[[19]] | plot_list[[20]] | plot_list[[21]] )
+    # Specify plot dimensions.
+    width <- 24; height <- 36
   }
 }
 
 ggsave(
   filename = here::here("Figures", str_c(name, "-correlation.png")),
-  width = 20, height = ifelse(ind_group == 0, 20, 35), units = "in", limitsize = FALSE
+  width = width, height = height, units = "in", limitsize = FALSE
 )
-
-id_counts
 
 # Proportion of marketing terms over time.
 id_counts |> 
