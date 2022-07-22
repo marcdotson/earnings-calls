@@ -112,20 +112,11 @@ ggsave(
 rm(word_counts)
 
 # Import the top advertisers from each calendar year.
-top_ads <- read_csv(here::here("Data", "Top Advertisers.csv")) |> 
+top_ads <- read_csv(here::here("Data", "Top Advertisers.csv")) |>
   mutate(
     name = str_to_upper(name),
     name = str_remove(name, "\\.$")
   )
-
-top_ads |> select(name) |> deframe() |> unique() |> tibble(name = _) |>
-  left_join(
-    word_tokens |> select(name) |> deframe() |> unique() |> tibble(name = _, value = 1),
-    by = "name"
-  ) -> test
-
-word_tokens |> select(name) |> deframe() |> unique() |> tibble(name = _) |> write_csv(here::here("Private", "names.csv"))
-test[is.na(test$value),] |> write_csv(here::here("Private", "no_join.csv"))
 
 # Import and transform the L&M sentiment dictionary.
 positive <- get_sentiments("loughran") |> 
@@ -274,6 +265,30 @@ ggsave(
   width = 12, height = 12, units = "in", limitsize = FALSE
 )
 
+# Visualize the top advertisers' correlation matrix.
+top_ads |> 
+  inner_join(id_counts, by = c("name", "year")) |> 
+  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |> 
+  correlate() |> 
+  stretch() |>
+  ggplot(aes(x = x, y = y, fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = round(r, 2))) +
+  scale_fill_gradient2(
+    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+    limits = c(-1, 1)
+  ) +
+  scale_x_discrete(expand=c(0.001,0.001)) +
+  scale_y_discrete(expand=c(0.001,0.001)) +
+  labs(
+    title = "Correlation Matrix for Top 200 Advertisers", 
+    x = "", y = ""
+  )
+
+ggsave(
+  filename = here::here("Figures", "overall-top_advertisers-correlation.png"),
+  width = 12, height = 12, units = "in", limitsize = FALSE
+)
 
 # # Proportion of marketing terms over time.
 # id_counts |> 
