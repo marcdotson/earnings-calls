@@ -115,7 +115,7 @@ rm(word_counts)
 top_ads <- read_csv(here::here("Data", "Top Advertisers.csv")) |> 
   mutate(
     name = str_to_upper(name),
-    name = str_remove(name, "\\.")
+    name = str_remove(name, "\\.$")
   )
 
 top_ads |> select(name) |> deframe() |> unique() |> tibble(name = _) |>
@@ -249,30 +249,56 @@ ggsave(
   width = width, height = height, units = "in", limitsize = FALSE
 )
 
-# Proportion of marketing terms over time.
+# Visualize the Consumer Durables & Apparel correlation matrix.
 id_counts |> 
-  filter(revenue!=0) |>
-  ggplot(aes(x = year_quarter, y = prop_mktg)) +
-  geom_point(size = 0.5)+
-  geom_quantile(size = 0.5) +
-  geom_smooth(method = lm) +
-  labs(title = "Proportion of Marketing Terms Over Time")
+  filter(group == "Consumer Durables & Apparel") |> 
+  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |> 
+  correlate() |> 
+  stretch() |>
+  ggplot(aes(x = x, y = y, fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = round(r, 2))) +
+  scale_fill_gradient2(
+    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+    limits = c(-1, 1)
+  ) +
+  scale_x_discrete(expand=c(0.001,0.001)) +
+  scale_y_discrete(expand=c(0.001,0.001)) +
+  labs(
+    title = "Correlation Matrix by Consumer Durables & Apparel Group", 
+    x = "", y = ""
+  )
 
-# ggsave(
-#   filename = here::here("Figures", "word_proportions_clmd.png"),
-#   width = 4, height = 7, units = "in"
-# )
+ggsave(
+  filename = here::here("Figures", "group-consumer_durables-correlation.png"),
+  width = 12, height = 12, units = "in", limitsize = FALSE
+)
 
-# Revenue; both should be identical
-lnm_tokens %>% filter(revenue!=0) %>%
-  ggplot(aes(x=year_quarter, y=revenue)) +
-  geom_point(size=0.5)+
-  geom_quantile(size=0.5) +
-  geom_smooth(method=lm) +
-  labs(title = "Revenue Over Time by Year/Quarter")
 
-# ggsave(
-#   filename = here::here("Figures", "revenue_by_year_quarter.png"),
-#   width = 4, height = 7, units = "in"
-# )
+# # Proportion of marketing terms over time.
+# id_counts |> 
+#   # filter(revenue!=0) |>
+#   ggplot(aes(x = year_quarter, y = prop_mktg)) +
+#   geom_point(size = 0.5)+
+#   geom_quantile(size = 0.5) +
+#   geom_smooth(method = lm) +
+#   labs(title = "Proportion of Marketing Terms Over Time")
+# 
+# # ggsave(
+# #   filename = here::here("Figures", "word_proportions_clmd.png"),
+# #   width = 4, height = 7, units = "in"
+# # )
+# 
+# # Revenue; both should be identical
+# lnm_tokens %>% filter(revenue!=0) %>%
+#   ggplot(aes(x=year_quarter, y=revenue)) +
+#   geom_point(size=0.5)+
+#   geom_quantile(size=0.5) +
+#   geom_smooth(method=lm) +
+#   labs(title = "Revenue Over Time by Year/Quarter")
+# 
+# # ggsave(
+# #   filename = here::here("Figures", "revenue_by_year_quarter.png"),
+# #   width = 4, height = 7, units = "in"
+# # )
 
