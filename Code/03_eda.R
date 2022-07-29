@@ -13,9 +13,9 @@ word_tokens <- read_rds(here::here("Data", "word_tokens.rds"))
 lnm <- read_rds(here::here("Data", "lnm.rds"))
 
 # Indicate GICS subset.
-ind_overa <- 0
+ind_overa <- 1
 ind_sectr <- 0
-ind_group <- 1
+ind_group <- 0
 # ind_indus <- 0
 # ind_subin <- 0
 
@@ -25,6 +25,50 @@ if (ind_sectr == 1) name <- "sector"
 if (ind_group == 1) name <- "group"
 # if (ind_indus == 1) name <- "industry"
 # if (ind_subin == 1) name <- "sub_industry"
+
+###########
+library(topicmodels)
+
+# Create a DTM.
+dtm <- word_tokens %>%
+  unnest(cols = words) |> 
+  count(word, id) %>%
+  cast_dtm(id, word, n)
+
+
+# Tune k.
+fit_tune <- tibble(num_topics = 2:20) %>%
+  mutate(
+    fit_lda = pmap(
+      list(k = num_topics), 
+      LDA, 
+      x = dtm, method = "Gibbs"
+    ),
+    model_fit = map(fit_lda, logLik) %>% as.numeric()
+  )
+
+ggplot(fit_tune, aes(x = num_topics, y = model_fit)) +
+  geom_point() + 
+  geom_line()
+
+
+# Fit a topic model.
+set.seed(42)
+fit_lda2 <- dtm_reviews %>% 
+  LDA(k = 2, method = "Gibbs")
+
+# Visualize.
+fit_lda2 %>% 
+  tidy(matrix = "beta") %>%
+  group_by(topic) %>% 
+  top_n(10, beta) %>%
+  ungroup() %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(x = beta, y = term, fill = as.factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+###########
 
 # Compute word counts.
 if (ind_overa == 1) {
@@ -151,9 +195,9 @@ id_counts
 # id_counts <- read_rds(here::here("Data", "id_counts.rds"))
 
 # Indicate GICS subset.
-ind_overa <- 0
+ind_overa <- 1
 ind_sectr <- 0
-ind_group <- 1
+ind_group <- 0
 # ind_indus <- 0
 # ind_subin <- 0
 
@@ -169,6 +213,7 @@ if (ind_overa == 1) {
   id_counts |> 
     select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |> 
     correlate() |> 
+    # shave() |> 
     stretch() |>
     ggplot(aes(x = x, y = y, fill = r)) +
     geom_tile() +
@@ -184,6 +229,35 @@ if (ind_overa == 1) {
       subtitle = "Overall Correlation",
       x = "", y = ""
     )
+  
+  ##########
+  test <- id_counts |>
+    select(revenue, earnings, difference, contains("lead"), n_mktg:prop_mktg_lead) |>
+    # select(revenue, prop_mktg) |>
+    as.matrix() |>
+    Hmisc::rcorr()
+  
+  # cor.test(x = test$revenue, y = test$prop_mktg, method = "pearson")$p.value # 4.042365e-09
+  round(test$P, 3) # 4.042365e-09
+  
+  correlate() |>
+    stretch() |>
+    ggplot(aes(x = x, y = y, fill = r)) +
+    geom_tile() +
+    geom_text(aes(label = round(r, 2))) +
+    scale_fill_gradient2(
+      low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+      limits = c(-1, 1)
+    ) +
+    scale_x_discrete(expand=c(0.001,0.001)) +
+    scale_y_discrete(expand=c(0.001,0.001)) +
+    labs(
+      title = "Correlation Matrix",
+      subtitle = "Overall Correlation",
+      x = "", y = ""
+    )
+  ##########
+  
   # Specify plot dimensions.
   width <- 12; height <- 12
 }
@@ -260,6 +334,16 @@ id_counts |>
     x = "", y = ""
   )
 
+#########
+test <- id_counts |> 
+  filter(group == "Consumer Durables & Apparel") |> 
+  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_mktg_lead) |>
+  as.matrix() |> 
+  Hmisc::rcorr()
+
+round(test$P, 3)
+#########
+
 ggsave(
   filename = here::here("Figures", "group-consumer_durables-correlation.png"),
   width = 12, height = 12, units = "in", limitsize = FALSE
@@ -289,6 +373,16 @@ ggsave(
   filename = here::here("Figures", "overall-top_advertisers-correlation.png"),
   width = 12, height = 12, units = "in", limitsize = FALSE
 )
+
+#########
+test <- top_ads |> 
+  inner_join(id_counts, by = c("name", "year")) |> 
+  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_mktg_lead) |>
+  as.matrix() |> 
+  Hmisc::rcorr()
+
+round(test$P, 3)
+#########
 
 # # Proportion of marketing terms over time.
 # id_counts |> 
