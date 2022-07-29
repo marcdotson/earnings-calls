@@ -170,6 +170,9 @@ negative <- get_sentiments("loughran") |>
   filter(sentiment == "negative") |> 
   select(word)
 
+# Import the future words dictionary.
+future <- read_csv(here::here("Data", "Future Focused Words.csv"))
+
 # Compute counts by id of marketing terms.
 id_counts <- word_tokens |> 
   # Make year_quarter variable for easier time series plots.
@@ -180,9 +183,11 @@ id_counts <- word_tokens |>
     n_mktg = map_dbl(words, ~.x |> semi_join(lnm, by = "word") |> nrow()),     # Count of marketing terms.
     n_pos = map_dbl(words, ~.x |> semi_join(positive, by = "word") |> nrow()), # Count of positive terms.
     n_neg = map_dbl(words, ~.x |> semi_join(negative, by = "word") |> nrow()), # Count of negative terms.
+    n_futr = map_dbl(words, ~.x |> semi_join(future, by = "word") |> nrow()),  # Count of future terms.
     prop_mktg = n_mktg / n_id,                                                 # Proportion of marketing terms.
     prop_pos = n_pos / n_id,                                                   # Proportion of positive terms.
     prop_neg = n_neg / n_id,                                                   # Proportion of negative terms.
+    prop_futr = n_futr / n_id,                                                 # Proportion of future terms.
     year_quarter = yq(year_quarter)                                            # Format year_quarter.
   ) |> 
   # Remove words list-column to save memory.
@@ -190,9 +195,9 @@ id_counts <- word_tokens |>
 
 id_counts
 
-# # Save and load intermediate steps, as needed.
-# # write_rds(id_counts, here::here("Data", "id_counts.rds"))
-# id_counts <- read_rds(here::here("Data", "id_counts.rds"))
+# Save and load intermediate steps, as needed.
+# write_rds(id_counts, here::here("Data", "id_counts.rds"))
+id_counts <- read_rds(here::here("Data", "id_counts.rds"))
 
 # Indicate GICS subset.
 ind_overa <- 1
