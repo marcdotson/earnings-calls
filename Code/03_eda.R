@@ -170,6 +170,7 @@ id_counts
 # write_rds(id_counts, here::here("Data", "id_counts.rds"))
 id_counts <- read_rds(here::here("Data", "id_counts.rds"))
 
+# Visualize the overall correlation matrix.
 # Run correlation tests.
 cor_test <- id_counts |>
   select(
@@ -184,7 +185,7 @@ cor_test <- id_counts |>
 # Extract p-values and indicate significance level.
 pvalues <- cor_test$P |> 
   as_cordf() |> 
-  shave(upper = TRUE) |>
+  # shave(upper = TRUE) |>
   stretch() |> 
   rename(pvalue = r) |> 
   mutate(
@@ -205,7 +206,7 @@ id_counts |>
     future, negative, positive, marketing
   ) |> 
   correlate() |> 
-  shave(upper = TRUE) |>
+  # shave(upper = TRUE) |>
   stretch() |>
   left_join(pvalues) |> 
   mutate(
@@ -234,6 +235,73 @@ ggsave(
   width = 7, height = 6, units = "in", limitsize = FALSE
 )
 
+# Visualize the Consumer Discretionary Sector correlation matrix.
+# Run correlation tests.
+cor_test <- id_counts |>
+  filter(sector == "Consumer Discretionary") |> 
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  as.matrix() |>
+  Hmisc::rcorr()
+
+# Extract p-values and indicate significance level.
+pvalues <- cor_test$P |> 
+  as_cordf() |> 
+  # shave(upper = TRUE) |>
+  stretch() |> 
+  rename(pvalue = r) |> 
+  mutate(
+    asterisk = case_when(
+      pvalue > 0.05 ~ "",
+      pvalue > 0.01 & pvalue <= 0.05 ~ "*",
+      pvalue > 0.001 & pvalue <= 0.01 ~ "**",
+      pvalue <= 0.001 ~ "***",
+    )
+  )
+
+# Plot the correlation matrix.
+id_counts |> 
+  filter(sector == "Consumer Discretionary") |> 
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  correlate() |> 
+  # shave(upper = TRUE) |>
+  stretch() |>
+  left_join(pvalues) |> 
+  mutate(
+    x = fct_inorder(x), 
+    y = fct_inorder(y),
+    r_asterisk = str_c(round(r, 2), asterisk)
+  ) |>
+  ggplot(aes(x = as.factor(x), y = as.factor(y), fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = r_asterisk)) +
+  scale_fill_gradient2(
+    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+    limits = c(-1, 1)
+  ) +
+  scale_x_discrete(expand=c(0.001,0.001), position = "top") +
+  scale_y_discrete(expand=c(0.001,0.001)) +
+  theme(plot.title = element_text(vjust = -2)) +
+  labs(
+    title = "Correlation Matrix for Consumer Discretionary Sector",
+    caption = TeX("* p-value $\\leq$ 0.05, ** p-value $\\leq$ 0.01, *** p-value $\\leq$ 0.001"),
+    x = "", y = ""
+  )
+
+ggsave(
+  filename = here::here("Figures", "sector-consumer_discretionary-correlation.png"),
+  width = 7, height = 6, units = "in", limitsize = FALSE
+)
+
 # Visualize the Consumer Durables & Apparel correlation matrix.
 # Run correlation tests.
 cor_test <- id_counts |>
@@ -250,7 +318,7 @@ cor_test <- id_counts |>
 # Extract p-values and indicate significance level.
 pvalues <- cor_test$P |> 
   as_cordf() |> 
-  shave(upper = TRUE) |>
+  # shave(upper = TRUE) |>
   stretch() |> 
   rename(pvalue = r) |> 
   mutate(
@@ -272,7 +340,7 @@ id_counts |>
     future, negative, positive, marketing
   ) |> 
   correlate() |> 
-  shave(upper = TRUE) |>
+  # shave(upper = TRUE) |>
   stretch() |>
   left_join(pvalues) |> 
   mutate(
@@ -317,7 +385,7 @@ cor_test <- top_ads |>
 # Extract p-values and indicate significance level.
 pvalues <- cor_test$P |> 
   as_cordf() |> 
-  shave(upper = TRUE) |>
+  # shave(upper = TRUE) |>
   stretch() |> 
   rename(pvalue = r) |> 
   mutate(
@@ -339,7 +407,7 @@ top_ads |>
     future, negative, positive, marketing
   ) |> 
   correlate() |> 
-  shave(upper = TRUE) |>
+  # shave(upper = TRUE) |>
   stretch() |>
   left_join(pvalues) |> 
   mutate(
@@ -358,7 +426,7 @@ top_ads |>
   scale_y_discrete(expand=c(0.001,0.001)) +
   theme(plot.title = element_text(vjust = -2)) +
   labs(
-    title = "Correlation Matrix for the Top 200 Advertisers",
+    title = "Correlation Matrix for the US Top Advertisers from 2000-2020",
     caption = TeX("* p-value $\\leq$ 0.05, ** p-value $\\leq$ 0.01, *** p-value $\\leq$ 0.001"),
     x = "", y = ""
   )
@@ -400,7 +468,7 @@ for (i in seq_along(1:length(group_names))) {
   # Extract p-values and indicate significance level.
   pvalues <- cor_test$P |> 
     as_cordf() |> 
-    shave(upper = TRUE) |>
+    # shave(upper = TRUE) |>
     stretch() |> 
     rename(pvalue = r) |> 
     mutate(
@@ -422,7 +490,7 @@ for (i in seq_along(1:length(group_names))) {
       future, negative, positive, marketing
     ) |> 
     correlate() |> 
-    shave(upper = TRUE) |>
+    # shave(upper = TRUE) |>
     stretch() |>
     left_join(pvalues) |> 
     mutate(
@@ -441,63 +509,112 @@ for (i in seq_along(1:length(group_names))) {
     scale_x_discrete(expand=c(0.001,0.001), position = "top") +
     scale_y_discrete(expand=c(0.001,0.001)) +
     theme(plot.title = element_text(vjust = -2)) +
+    # theme(plot.title = element_text(vjust = -2, size = 25)) +
     labs(
-      title = str_c("Correlation Matrix for ", str_to_title(group_names[i]), " ", str_to_title(name)),
+      title = str_c(str_to_title(group_names[i])),
+      # title = str_c("Correlation Matrix for ", str_to_title(group_names[i]), " ", str_to_title(name)),
       caption = TeX("* p-value $\\leq$ 0.05, ** p-value $\\leq$ 0.01, *** p-value $\\leq$ 0.001"),
       x = "", y = ""
     )
 }
 
 if (ind_sectr == 1) {
-  ( plot_list[[1]] | plot_list[[2]] ) / 
-  ( plot_list[[3]] | plot_list[[4]] ) /
-  ( plot_list[[5]] | plot_list[[6]] )
+  # plot_list[[1]] + plot_list[[2]] + plot_list[[3]] + plot_list[[4]] + plot_list[[5]] + 
+  #   plot_list[[6]] + plot_list[[7]] + plot_list[[8]] + plot_list[[9]] + plot_list[[10]] + 
+  #   plot_list[[11]] + plot_spacer() + 
+  #   plot_layout(
+  #     ncol = 3, nrow = 4, byrow = TRUE,
+  #     widths = 7, heights = 6
+  #   )
+  # 
+  # ggsave(
+  #   filename = here::here("Figures", str_c(name, "-correlation.png")),
+  #   width = 21, height = 24, units = "in", limitsize = FALSE
+  # )
   
+  plot_list[[1]] + plot_list[[2]] + plot_list[[3]] + plot_list[[4]] + plot_list[[5]] +
+    plot_list[[6]] + 
+    plot_layout(
+      ncol = 2, nrow = 3, byrow = TRUE,
+      widths = 7, heights = 6
+    )
+
   ggsave(
     filename = here::here("Figures", str_c(name, "-correlation-01.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
-  
-  ( plot_list[[7]] | plot_list[[8]] ) / 
-  ( plot_list[[9]] | plot_list[[10]] ) /
-  ( plot_list[[11]] | grid::textGrob(" ") )
-  
+
+  plot_list[[7]] + plot_list[[8]] + plot_list[[9]] + plot_list[[10]] + plot_list[[11]] + 
+    plot_spacer() +
+    plot_layout(
+      ncol = 2, nrow = 3, byrow = TRUE,
+      widths = 7, heights = 6
+    )
+
   ggsave(
     filename = here::here("Figures", str_c(name, "-correlation-02.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
 }
 if (ind_group == 1) {
-  ( plot_list[[1]] | plot_list[[2]] ) / 
-  ( plot_list[[3]] | plot_list[[4]] ) /
-  ( plot_list[[5]] | plot_list[[6]] )
+  # plot_list[[1]] + plot_list[[2]] + plot_list[[3]] + plot_list[[4]] + plot_list[[5]] + 
+  #   plot_list[[6]] + plot_list[[7]] + plot_list[[8]] + plot_list[[9]] + plot_list[[10]] + 
+  #   plot_list[[11]] + plot_list[[12]] + plot_list[[13]] + plot_list[[14]] + plot_list[[15]] + 
+  #   plot_list[[16]] + plot_list[[17]] + plot_list[[18]] + plot_list[[19]] + plot_list[[20]] + 
+  #   plot_list[[21]] + plot_spacer() + plot_spacer() + plot_spacer() + 
+  #   plot_layout(
+  #     ncol = 4, nrow = 6, byrow = TRUE,
+  #     widths = 7, heights = 6
+  #   )
+  # 
+  # ggsave(
+  #   filename = here::here("Figures", str_c(name, "-correlation.png")),
+  #   width = 28, height = 36, units = "in", limitsize = FALSE
+  # )
   
+  plot_list[[1]] + plot_list[[2]] + plot_list[[3]] + plot_list[[4]] + plot_list[[5]] + 
+    plot_list[[6]] + 
+    plot_layout(
+      ncol = 2, nrow = 3, byrow = TRUE,
+      widths = 7, heights = 6
+    )
+
   ggsave(
     filename = here::here("Figures", str_c(name, "-correlation-01.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
-  
-  ( plot_list[[7]] | plot_list[[8]] ) / 
-  ( plot_list[[9]] | plot_list[[10]] ) /
-  ( plot_list[[11]] | plot_list[[12]] )
-  
+
+  plot_list[[7]] + plot_list[[8]] + plot_list[[9]] + plot_list[[10]] + 
+    plot_list[[11]] + plot_list[[12]] + 
+    plot_layout(
+      ncol = 2, nrow = 3, byrow = TRUE,
+      widths = 7, heights = 6
+    )
+
   ggsave(
     filename = here::here("Figures", str_c(name, "-correlation-02.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
-  
-  ( plot_list[[13]] | plot_list[[14]] ) / 
-  ( plot_list[[15]] | plot_list[[16]] ) /
-  ( plot_list[[17]] | plot_list[[18]] )
-  
+
+  plot_list[[13]] + plot_list[[14]] + plot_list[[15]] + 
+    plot_list[[16]] + plot_list[[17]] + plot_list[[18]] + 
+    plot_layout(
+      ncol = 2, nrow = 3, byrow = TRUE,
+      widths = 7, heights = 6
+    )
+
   ggsave(
     filename = here::here("Figures", str_c(name, "-correlation-03.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
-  
-  ( plot_list[[19]] | plot_list[[20]] ) / 
-  ( plot_list[[21]] | grid::textGrob(" ") )
-  
+
+  plot_list[[19]] + plot_list[[20]] + 
+    plot_list[[21]] + plot_spacer() + 
+    plot_layout(
+      ncol = 2, nrow = 2, byrow = TRUE,
+      widths = 7, heights = 6
+    )
+
   ggsave(
     filename = here::here("Figures", str_c(name, "-correlation-04.png")),
     width = 14, height = 12, units = "in", limitsize = FALSE
