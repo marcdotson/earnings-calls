@@ -6,6 +6,7 @@ library(tidytext)
 library(textdata)
 library(corrr)
 library(patchwork)
+library(latex2exp)
 
 # Import word tokens and the marketing dictionary validated from 
 # Loughran and McDonald's financial dictionary.
@@ -25,50 +26,6 @@ if (ind_sectr == 1) name <- "sector"
 if (ind_group == 1) name <- "group"
 # if (ind_indus == 1) name <- "industry"
 # if (ind_subin == 1) name <- "sub_industry"
-
-###########
-library(topicmodels)
-
-# Create a DTM.
-dtm <- word_tokens %>%
-  unnest(cols = words) |> 
-  count(word, id) %>%
-  cast_dtm(id, word, n)
-
-
-# Tune k.
-fit_tune <- tibble(num_topics = 2:20) %>%
-  mutate(
-    fit_lda = pmap(
-      list(k = num_topics), 
-      LDA, 
-      x = dtm, method = "Gibbs"
-    ),
-    model_fit = map(fit_lda, logLik) %>% as.numeric()
-  )
-
-ggplot(fit_tune, aes(x = num_topics, y = model_fit)) +
-  geom_point() + 
-  geom_line()
-
-
-# Fit a topic model.
-set.seed(42)
-fit_lda2 <- dtm_reviews %>% 
-  LDA(k = 2, method = "Gibbs")
-
-# Visualize.
-fit_lda2 %>% 
-  tidy(matrix = "beta") %>%
-  group_by(topic) %>% 
-  top_n(10, beta) %>%
-  ungroup() %>%
-  mutate(term = reorder_within(term, beta, topic)) %>%
-  ggplot(aes(x = beta, y = term, fill = as.factor(topic))) +
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~ topic, scales = "free") +
-  scale_y_reordered()
-###########
 
 # Compute word counts.
 if (ind_overa == 1) {
@@ -190,6 +147,20 @@ id_counts <- word_tokens |>
     prop_futr = n_futr / n_id,                                                 # Proportion of future terms.
     year_quarter = yq(year_quarter)                                            # Format year_quarter.
   ) |> 
+  # Lead prop_mktg data by firm.
+  group_by(gvkey) |> 
+  arrange(year_quarter) |> 
+  mutate(prop_mktg_lead = lead(prop_mktg, order_by = year_quarter)) |> 
+  ungroup() |>
+  # Rename variables for plotting.
+  rename(
+    surprise = difference,
+    positive = prop_pos,
+    negative = prop_neg,
+    marketing = prop_mktg,
+    mktg_lead = prop_mktg_lead,
+    future = prop_futr
+  ) |> 
   # Remove words list-column to save memory.
   select(-words)
 
@@ -199,195 +170,339 @@ id_counts
 # write_rds(id_counts, here::here("Data", "id_counts.rds"))
 id_counts <- read_rds(here::here("Data", "id_counts.rds"))
 
+# Run correlation tests.
+cor_test <- id_counts |>
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  as.matrix() |>
+  Hmisc::rcorr()
+
+# Extract p-values and indicate significance level.
+pvalues <- cor_test$P |> 
+  as_cordf() |> 
+  shave(upper = TRUE) |>
+  stretch() |> 
+  rename(pvalue = r) |> 
+  mutate(
+    asterisk = case_when(
+      pvalue > 0.05 ~ "",
+      pvalue > 0.01 & pvalue <= 0.05 ~ "*",
+      pvalue > 0.001 & pvalue <= 0.01 ~ "**",
+      pvalue <= 0.001 ~ "***",
+    )
+  )
+
+# Plot the correlation matrix.
+id_counts |> 
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  correlate() |> 
+  shave(upper = TRUE) |>
+  stretch() |>
+  left_join(pvalues) |> 
+  mutate(
+    x = fct_inorder(x), 
+    y = fct_inorder(y),
+    r_asterisk = str_c(round(r, 2), asterisk)
+  ) |>
+  ggplot(aes(x = as.factor(x), y = as.factor(y), fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = r_asterisk)) +
+  scale_fill_gradient2(
+    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+    limits = c(-1, 1)
+  ) +
+  scale_x_discrete(expand=c(0.001,0.001), position = "top") +
+  scale_y_discrete(expand=c(0.001,0.001)) +
+  theme(plot.title = element_text(vjust = -2)) +
+  labs(
+    title = "Correlation Matrix",
+    caption = TeX("* p-value $\\leq$ 0.05, ** p-value $\\leq$ 0.01, *** p-value $\\leq$ 0.001"),
+    x = "", y = ""
+  )
+
+ggsave(
+  filename = here::here("Figures", "overall-correlation.png"),
+  width = 7, height = 6, units = "in", limitsize = FALSE
+)
+
+# Visualize the Consumer Durables & Apparel correlation matrix.
+# Run correlation tests.
+cor_test <- id_counts |>
+  filter(group == "Consumer Durables & Apparel") |> 
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  as.matrix() |>
+  Hmisc::rcorr()
+
+# Extract p-values and indicate significance level.
+pvalues <- cor_test$P |> 
+  as_cordf() |> 
+  shave(upper = TRUE) |>
+  stretch() |> 
+  rename(pvalue = r) |> 
+  mutate(
+    asterisk = case_when(
+      pvalue > 0.05 ~ "",
+      pvalue > 0.01 & pvalue <= 0.05 ~ "*",
+      pvalue > 0.001 & pvalue <= 0.01 ~ "**",
+      pvalue <= 0.001 ~ "***",
+    )
+  )
+
+# Plot the correlation matrix.
+id_counts |> 
+  filter(group == "Consumer Durables & Apparel") |> 
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  correlate() |> 
+  shave(upper = TRUE) |>
+  stretch() |>
+  left_join(pvalues) |> 
+  mutate(
+    x = fct_inorder(x), 
+    y = fct_inorder(y),
+    r_asterisk = str_c(round(r, 2), asterisk)
+  ) |>
+  ggplot(aes(x = as.factor(x), y = as.factor(y), fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = r_asterisk)) +
+  scale_fill_gradient2(
+    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+    limits = c(-1, 1)
+  ) +
+  scale_x_discrete(expand=c(0.001,0.001), position = "top") +
+  scale_y_discrete(expand=c(0.001,0.001)) +
+  theme(plot.title = element_text(vjust = -2)) +
+  labs(
+    title = "Correlation Matrix for Consumer Durables & Apparel Group",
+    caption = TeX("* p-value $\\leq$ 0.05, ** p-value $\\leq$ 0.01, *** p-value $\\leq$ 0.001"),
+    x = "", y = ""
+  )
+
+ggsave(
+  filename = here::here("Figures", "group-consumer_durables-correlation.png"),
+  width = 7, height = 6, units = "in", limitsize = FALSE
+)
+
+# Visualize the top advertisers' correlation matrix.
+# Run correlation tests.
+cor_test <- top_ads |> 
+  inner_join(id_counts, by = c("name", "year")) |> 
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  as.matrix() |>
+  Hmisc::rcorr()
+
+# Extract p-values and indicate significance level.
+pvalues <- cor_test$P |> 
+  as_cordf() |> 
+  shave(upper = TRUE) |>
+  stretch() |> 
+  rename(pvalue = r) |> 
+  mutate(
+    asterisk = case_when(
+      pvalue > 0.05 ~ "",
+      pvalue > 0.01 & pvalue <= 0.05 ~ "*",
+      pvalue > 0.001 & pvalue <= 0.01 ~ "**",
+      pvalue <= 0.001 ~ "***",
+    )
+  )
+
+# Plot the correlation matrix.
+top_ads |> 
+  inner_join(id_counts, by = c("name", "year")) |> 
+  select(
+    # Consider outcome variables (appear in reverse order).
+    earnings, surprise, revenue,
+    # Considered explanatory variables (appear in reverse order).
+    future, negative, positive, marketing
+  ) |> 
+  correlate() |> 
+  shave(upper = TRUE) |>
+  stretch() |>
+  left_join(pvalues) |> 
+  mutate(
+    x = fct_inorder(x), 
+    y = fct_inorder(y),
+    r_asterisk = str_c(round(r, 2), asterisk)
+  ) |>
+  ggplot(aes(x = as.factor(x), y = as.factor(y), fill = r)) +
+  geom_tile() +
+  geom_text(aes(label = r_asterisk)) +
+  scale_fill_gradient2(
+    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
+    limits = c(-1, 1)
+  ) +
+  scale_x_discrete(expand=c(0.001,0.001), position = "top") +
+  scale_y_discrete(expand=c(0.001,0.001)) +
+  theme(plot.title = element_text(vjust = -2)) +
+  labs(
+    title = "Correlation Matrix for the Top 200 Advertisers",
+    caption = TeX("* p-value $\\leq$ 0.05, ** p-value $\\leq$ 0.01, *** p-value $\\leq$ 0.001"),
+    x = "", y = ""
+  )
+
+ggsave(
+  filename = here::here("Figures", "top_advertisers-correlation.png"),
+  width = 7, height = 6, units = "in", limitsize = FALSE
+)  
+
 # Indicate GICS subset.
-ind_overa <- 1
+# ind_overa <- 0
 ind_sectr <- 0
-ind_group <- 0
+ind_group <- 1
 # ind_indus <- 0
 # ind_subin <- 0
 
 # Specify name conditioned on indicator flags.
-if (ind_overa == 1) name <- "overall"
+# if (ind_overa == 1) name <- "overall"
 if (ind_sectr == 1) name <- "sector"
 if (ind_group == 1) name <- "group"
 # if (ind_indus == 1) name <- "industry"
-# if (ind_subin == 1) name <- "sub_industry"
+# if (ind_subin == 1) name <- "sub_industry"  
 
-# Visualize the correlation matrix.
-if (ind_overa == 1) {
-  id_counts |> 
-    select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |> 
-    correlate() |> 
-    # shave() |> 
-    stretch() |>
-    ggplot(aes(x = x, y = y, fill = r)) +
-    geom_tile() +
-    geom_text(aes(label = round(r, 2))) +
-    scale_fill_gradient2(
-      low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
-      limits = c(-1, 1)
-    ) +
-    scale_x_discrete(expand=c(0.001,0.001)) +
-    scale_y_discrete(expand=c(0.001,0.001)) +
-    labs(
-      title = "Correlation Matrix",
-      subtitle = "Overall Correlation",
-      x = "", y = ""
-    )
-  
-  ##########
-  test <- id_counts |>
-    select(revenue, earnings, difference, contains("lead"), n_mktg:prop_mktg_lead) |>
-    # select(revenue, prop_mktg) |>
+group_names <- unique(id_counts[[name]])[!map_lgl(unique(id_counts[[name]]), ~.x |> is.na())]
+plot_list <- vector(mode = "list", length = length(group_names))
+for (i in seq_along(1:length(group_names))) {
+  # Run correlation tests.
+  cor_test <- id_counts |>
+    filter(.data[[name]] == group_names[i]) |>
+    select(
+      # Consider outcome variables (appear in reverse order).
+      earnings, surprise, revenue,
+      # Considered explanatory variables (appear in reverse order).
+      future, negative, positive, marketing
+    ) |> 
     as.matrix() |>
     Hmisc::rcorr()
   
-  # cor.test(x = test$revenue, y = test$prop_mktg, method = "pearson")$p.value # 4.042365e-09
-  round(test$P, 3) # 4.042365e-09
+  # Extract p-values and indicate significance level.
+  pvalues <- cor_test$P |> 
+    as_cordf() |> 
+    shave(upper = TRUE) |>
+    stretch() |> 
+    rename(pvalue = r) |> 
+    mutate(
+      asterisk = case_when(
+        pvalue > 0.05 ~ "",
+        pvalue > 0.01 & pvalue <= 0.05 ~ "*",
+        pvalue > 0.001 & pvalue <= 0.01 ~ "**",
+        pvalue <= 0.001 ~ "***",
+      )
+    )
   
-  correlate() |>
+  # Plot the correlation matrix.
+  plot_list[[i]] <- id_counts |> 
+    filter(.data[[name]] == group_names[i]) |>
+    select(
+      # Consider outcome variables (appear in reverse order).
+      earnings, surprise, revenue,
+      # Considered explanatory variables (appear in reverse order).
+      future, negative, positive, marketing
+    ) |> 
+    correlate() |> 
+    shave(upper = TRUE) |>
     stretch() |>
-    ggplot(aes(x = x, y = y, fill = r)) +
+    left_join(pvalues) |> 
+    mutate(
+      x = fct_inorder(x), 
+      y = fct_inorder(y),
+      r_asterisk = str_c(round(r, 2), asterisk)
+    ) |>
+    
+    ggplot(aes(x = as.factor(x), y = as.factor(y), fill = r)) +
     geom_tile() +
-    geom_text(aes(label = round(r, 2))) +
+    geom_text(aes(label = r_asterisk)) +
     scale_fill_gradient2(
       low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
       limits = c(-1, 1)
     ) +
-    scale_x_discrete(expand=c(0.001,0.001)) +
+    scale_x_discrete(expand=c(0.001,0.001), position = "top") +
     scale_y_discrete(expand=c(0.001,0.001)) +
+    theme(plot.title = element_text(vjust = -2)) +
     labs(
-      title = "Correlation Matrix",
-      subtitle = "Overall Correlation",
+      title = str_c("Correlation Matrix for ", str_to_title(group_names[i]), " ", str_to_title(name)),
+      caption = TeX("* p-value $\\leq$ 0.05, ** p-value $\\leq$ 0.01, *** p-value $\\leq$ 0.001"),
       x = "", y = ""
     )
-  ##########
+}
+
+if (ind_sectr == 1) {
+  ( plot_list[[1]] | plot_list[[2]] ) / 
+  ( plot_list[[3]] | plot_list[[4]] ) /
+  ( plot_list[[5]] | plot_list[[6]] )
   
-  # Specify plot dimensions.
-  width <- 12; height <- 12
-}
-if (ind_overa != 1) {
-  group_names <- unique(id_counts[[name]])[!map_lgl(unique(id_counts[[name]]), ~.x |> is.na())]
-  plot_list <- vector(mode = "list", length = length(group_names))
-  for (i in seq_along(1:length(group_names))) {
-    plot_list[[i]] <- id_counts |> 
-      filter(.data[[name]] == group_names[i]) |>
-      select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |>
-      correlate() |> 
-      stretch() |>
-      ggplot(aes(x = x, y = y, fill = r)) +
-      geom_tile() +
-      geom_text(aes(label = round(r, 2))) +
-      scale_fill_gradient2(
-        low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
-        limits = c(-1, 1)
-      ) +
-      scale_x_discrete(expand=c(0.001,0.001)) +
-      scale_y_discrete(expand=c(0.001,0.001)) +
-      labs(
-        title = str_c(
-          "Correlation Matrix by ", 
-          str_to_title(group_names[i]), " ", 
-          str_to_title(name)
-        ),
-        x = "", y = ""
-      )
-  }
-  if (ind_sectr == 1) {
-    ( plot_list[[1]] | plot_list[[2]] | plot_list[[3]] ) / 
-    ( plot_list[[4]] | plot_list[[5]] | plot_list[[6]] ) / 
-    ( plot_list[[7]] | plot_list[[8]] | plot_list[[9]] ) / 
-    ( plot_list[[10]] | plot_list[[11]] | grid::textGrob(" ") )
-    # Specify plot dimensions.
-    width <- 24; height <- 24
-  }
-  if (ind_group == 1) {
-    ( plot_list[[1]] | plot_list[[2]] | plot_list[[3]] ) / 
-    ( plot_list[[4]] | plot_list[[5]] | plot_list[[6]] ) / 
-    ( plot_list[[7]] | plot_list[[8]] | plot_list[[9]] ) / 
-    ( plot_list[[10]] | plot_list[[11]] | plot_list[[12]] ) /
-    ( plot_list[[13]] | plot_list[[14]] | plot_list[[15]] ) /
-    ( plot_list[[16]] | plot_list[[17]] | plot_list[[18]] ) /
-    ( plot_list[[19]] | plot_list[[20]] | plot_list[[21]] )
-    # Specify plot dimensions.
-    width <- 24; height <- 36
-  }
-}
-
-ggsave(
-  filename = here::here("Figures", str_c(name, "-correlation.png")),
-  width = width, height = height, units = "in", limitsize = FALSE
-)
-
-# Visualize the Consumer Durables & Apparel correlation matrix.
-id_counts |> 
-  filter(group == "Consumer Durables & Apparel") |> 
-  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |> 
-  correlate() |> 
-  stretch() |>
-  ggplot(aes(x = x, y = y, fill = r)) +
-  geom_tile() +
-  geom_text(aes(label = round(r, 2))) +
-  scale_fill_gradient2(
-    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
-    limits = c(-1, 1)
-  ) +
-  scale_x_discrete(expand=c(0.001,0.001)) +
-  scale_y_discrete(expand=c(0.001,0.001)) +
-  labs(
-    title = "Correlation Matrix by Consumer Durables & Apparel Group", 
-    x = "", y = ""
+  ggsave(
+    filename = here::here("Figures", str_c(name, "-correlation-01.png")),
+    width = 14, height = 18, units = "in", limitsize = FALSE
   )
-
-#########
-test <- id_counts |> 
-  filter(group == "Consumer Durables & Apparel") |> 
-  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_mktg_lead) |>
-  as.matrix() |> 
-  Hmisc::rcorr()
-
-round(test$P, 3)
-#########
-
-ggsave(
-  filename = here::here("Figures", "group-consumer_durables-correlation.png"),
-  width = 12, height = 12, units = "in", limitsize = FALSE
-)
-
-# Visualize the top advertisers' correlation matrix.
-top_ads |> 
-  inner_join(id_counts, by = c("name", "year")) |> 
-  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_neg) |> 
-  correlate() |> 
-  stretch() |>
-  ggplot(aes(x = x, y = y, fill = r)) +
-  geom_tile() +
-  geom_text(aes(label = round(r, 2))) +
-  scale_fill_gradient2(
-    low = "#FF0000", mid = "#FFFFFF", high = "#56B1F7",
-    limits = c(-1, 1)
-  ) +
-  scale_x_discrete(expand=c(0.001,0.001)) +
-  scale_y_discrete(expand=c(0.001,0.001)) +
-  labs(
-    title = "Correlation Matrix for Top 200 Advertisers", 
-    x = "", y = ""
+  
+  ( plot_list[[7]] | plot_list[[8]] ) / 
+  ( plot_list[[9]] | plot_list[[10]] ) /
+  ( plot_list[[11]] | grid::textGrob(" ") )
+  
+  ggsave(
+    filename = here::here("Figures", str_c(name, "-correlation-02.png")),
+    width = 14, height = 18, units = "in", limitsize = FALSE
   )
-
-ggsave(
-  filename = here::here("Figures", "overall-top_advertisers-correlation.png"),
-  width = 12, height = 12, units = "in", limitsize = FALSE
-)
-
-#########
-test <- top_ads |> 
-  inner_join(id_counts, by = c("name", "year")) |> 
-  select(revenue, earnings, difference, contains("lead"), n_mktg:prop_mktg_lead) |>
-  as.matrix() |> 
-  Hmisc::rcorr()
-
-round(test$P, 3)
-#########
+}
+if (ind_group == 1) {
+  ( plot_list[[1]] | plot_list[[2]] ) / 
+  ( plot_list[[3]] | plot_list[[4]] ) /
+  ( plot_list[[5]] | plot_list[[6]] )
+  
+  ggsave(
+    filename = here::here("Figures", str_c(name, "-correlation-01.png")),
+    width = 14, height = 18, units = "in", limitsize = FALSE
+  )
+  
+  ( plot_list[[7]] | plot_list[[8]] ) / 
+  ( plot_list[[9]] | plot_list[[10]] ) /
+  ( plot_list[[11]] | plot_list[[12]] )
+  
+  ggsave(
+    filename = here::here("Figures", str_c(name, "-correlation-02.png")),
+    width = 14, height = 18, units = "in", limitsize = FALSE
+  )
+  
+  ( plot_list[[13]] | plot_list[[14]] ) / 
+  ( plot_list[[15]] | plot_list[[16]] ) /
+  ( plot_list[[17]] | plot_list[[18]] )
+  
+  ggsave(
+    filename = here::here("Figures", str_c(name, "-correlation-03.png")),
+    width = 14, height = 18, units = "in", limitsize = FALSE
+  )
+  
+  ( plot_list[[19]] | plot_list[[20]] ) / 
+  ( plot_list[[21]] | grid::textGrob(" ") )
+  
+  ggsave(
+    filename = here::here("Figures", str_c(name, "-correlation-04.png")),
+    width = 14, height = 12, units = "in", limitsize = FALSE
+  )
+}
 
 # # Proportion of marketing terms over time.
 # id_counts |> 
