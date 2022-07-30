@@ -50,7 +50,7 @@ if (ind_overa == 1) {
     mutate(word = fct_reorder(word, n)) |> 
     ggplot(aes(x = n, y = word)) +
     geom_col() +
-    labs(title = "Top Overall Word Counts")
+    labs(title = "Top 10 Words", y = "")
 }
 if (ind_overa != 1) {
   word_counts |> 
@@ -66,12 +66,12 @@ if (ind_overa != 1) {
       ncol = round(length(unique(word_counts[[name]])) / 4)
     ) +
     scale_y_reordered() +
-    labs(title = str_c("Top Word Counts by ", str_to_title(name)))
+    labs(title = str_c("Top 10 Words by ", str_to_title(name)))
 }
 
 ggsave(
   filename = here::here("Figures", str_c(name, "-word_counts.png")),
-  width = 10, height = 12, units = "in", limitsize = FALSE
+  width = 7, height = 5, units = "in", limitsize = FALSE
 )
 
 # Visualize marketing terms.
@@ -83,7 +83,7 @@ if (ind_overa == 1) {
     mutate(word = fct_reorder(word, n)) |> 
     ggplot(aes(x = n, y = word)) +
     geom_col() +
-    labs(title = "Top Overall Marketing Terms")
+    labs(title = "Top 10 Marketing Words", y = "")
 }
 if (ind_overa != 1) {
   word_counts |> 
@@ -100,12 +100,12 @@ if (ind_overa != 1) {
       ncol = round(length(unique(word_counts[[name]])) / 4)
     ) +
     scale_y_reordered() +
-    labs(title = str_c("Top Marketing Terms by ", str_to_title(name)))
+    labs(title = str_c("Top 10 Marketing Words by ", str_to_title(name)))
 }
 
 ggsave(
   filename = here::here("Figures", str_c(name, "-marketing_terms.png")),
-  width = 10, height = 12, units = "in", limitsize = FALSE
+  width = 7, height = 5, units = "in", limitsize = FALSE
 )
 
 # Visualize Aggregate Counts ----------------------------------------------
