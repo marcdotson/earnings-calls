@@ -1,7 +1,7 @@
 ---
 title: "Marketing Language in Financial Earnings Calls"
 author: "Marc Dotson (BYU), Ryan Elder (BYU), Jim Mourey (DePaul), and William Rose (BYU)"
-date: "September 9, 2022"
+date: "September 22, 2022"
 format: 
   revealjs:
     theme: simple
