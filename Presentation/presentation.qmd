@@ -1,7 +1,10 @@
 ---
 title: "Marketing Language in Financial Earnings Calls"
 author: "Marc Dotson (BYU), Ryan Elder (BYU), Jim Mourey (DePaul), and William Rose (BYU)"
-date: "September 22, 2022"
+date: "October 17, 2022"
+title-slide-attributes:
+  data-background-color: "royalblue"
+highlight-style: github
 format: 
   revealjs:
     theme: simple
@@ -84,7 +87,7 @@ No extant research has investigated how variations in the frequency of marketing
 
 # Data
 
-## Data Wrangling {.scrollable .smaller}
+## Data Wrangling {.scrollable}
 
 ::: panel-tabset
 ### Process
@@ -95,14 +98,17 @@ No extant research has investigated how variations in the frequency of marketing
 The resulting corpus has **436 million observations** from 130,531 quarterly earnings call transcripts across 5,430 companies from April 2001 to December 2020.
 :::
 
-```{mermaid}
-%%| fig-width: 10
-flowchart LR
-  A(Corpus) --> B(Clean Data)
-  C(Query Financial Data) --> D{Join Data}
-  B --> D
-  D --> E(Tokenize)
-  E --> f(Remove Stop Words)
+```{dot}
+#| fig-width: 10
+digraph G {
+  layout=dot
+  
+  "Corpus" -> "Clean Data";
+  "Query Financial Data" -> "Join Data";
+  "Clean Data" -> "Join Data";
+  "Join Data" -> "Tokenize";
+  "Tokenize" -> "Remove Stop Words";
+}
 ```
 
 ### Steps
@@ -141,7 +147,10 @@ The bag-of-words approach to text analysis is like linear regression: It's often
 
 ### Code
 
-```
+```{r}
+#| eval: false
+#| echo: true
+
 # Earnings Calls ----------------------------------------------------------
 # Load packages.
 library(tidyverse)
@@ -453,7 +462,7 @@ write_rds(word_tokens, here::here("Data", "word_tokens.rds"))
 
 ---
 
-![](Figures/overall-word_counts.png)
+![](../Figures/overall-word_counts.png)
 
 ## Marketing Dictionary {.smaller}
 
@@ -469,14 +478,14 @@ Our marketing dictionary was constructed and validated following the method outl
 
 ## {auto-animate=true}
 
-![](Figures/overall-marketing_terms.png)
+![](../Figures/overall-marketing_terms.png)
 
 ## {auto-animate=true}
 
 ::: {layout-ncol=2}
-![](Figures/overall-marketing_terms.png)
+![](../Figures/overall-marketing_terms.png)
 
-![](Figures/overall-word_counts.png)
+![](../Figures/overall-word_counts.png)
 :::
 
 ## Counts and Proportions {.smaller}
@@ -508,35 +517,35 @@ We control for variation in earnings call length relative to term use by **calcu
 
 ## {auto-animate=true}
 
-![](Figures/overall-correlation.png)
+![](../Figures/overall-correlation.png)
 
 ## {auto-animate=true}
 
 ::: {layout-ncol=2}
-![](Figures/overall-correlation.png)
+![](../Figures/overall-correlation.png)
 
-![](Figures/sector-correlation.png)
+![](../Figures/sector-correlation.png)
 :::
 
 ## 
 
 ::: {layout-ncol=2}
-![](Figures/overall-correlation.png)
+![](../Figures/overall-correlation.png)
 
-![](Figures/sector-consumer_discretionary-correlation.png)
+![](../Figures/sector-consumer_discretionary-correlation.png)
 :::
 
 ## 
 
 ::: {layout-ncol=2}
-![](Figures/sector-consumer_discretionary-correlation.png)
+![](../Figures/sector-consumer_discretionary-correlation.png)
 
-![](Figures/group-consumer_durables-correlation.png)
+![](../Figures/group-consumer_durables-correlation.png)
 :::
 
 ## 
 
-![](Figures/overall-collocation.png)
+![](../Figures/overall-collocation.png)
 
 ##  {.smaller}
 
