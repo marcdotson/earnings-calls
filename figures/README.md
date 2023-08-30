@@ -1,7 +1,4 @@
----
-title: "Figures"
-output: github_document
----
+# Figures
 
 PNG images and plots.
 

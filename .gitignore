@@ -8,9 +8,9 @@
 .DS_Store
 
 # Folders
-Data/*
-Output/*
-Private/*
+data/*
+output/*
+private/*
 
 # Files
 *.pdf

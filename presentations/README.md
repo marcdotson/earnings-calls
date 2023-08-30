@@ -1,7 +1,6 @@
-Presentation
-================
+# Presentations
 
-Presentation slides, without its knitted PDF pushed.
+Presentation slides.
 
 License: This work is licensed under a [Creative Commons
 Attribution-ShareAlike 4.0 International
