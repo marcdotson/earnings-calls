@@ -1,6 +1,5 @@
-Text Analysis of Marketing Language in Financial Earnings Call
+# Text Analysis of Marketing Language in Financial Earnings Call
 Transcripts
-================
 
 ## Abstract
 
@@ -21,15 +20,28 @@ consumer focused and marketing-centric companies.
 
 ## Project Organization
 
--   `/Code` Scripts with prefixes (e.g., `01_import-data.R`,
-    `02_clean-data.R`) and functions in `/Source`.
--   `/Data` Data, which isn’t pushed.
--   `/Figures` PNG images and plots.
--   `/Output` Output from model runs, which isn’t pushed.
--   `/Presentation` Presentation slides, without its knitted PDF pushed.
--   `/Private` A catch-all folder for miscellaneous files, not pushed.
--   `/Writing` Case studies associated with the paper, without its
-    knitted PDF pushed.
+- `/code` Scripts with prefixes (e.g., `01_import-data.R`,
+  `02_clean-data.R`) and functions in `/code/source`.
+- `/data` Simulated and real data, the latter not pushed.
+- `/figures` PNG images and plots.
+- `/output` Output from model runs, not pushed.
+- `/presentations` Presentation slides.
+- `/private` A catch-all folder for miscellaneous files, not pushed.
+- `/renv` Project library, once initialized (see below).
+- `/writing` Case studies and the paper.
+- `renv.lock` Information on the reproducible environment.
 
-For general details on collaborating using GitHub see [Research
-Assistant Training](https://github.com/marcdotson/ra-training).
+## Reproducible Environment
+
+Every package you install lives in your system library, accessible to
+all projects. However, packages change. Add a reproducible environment
+by creating a project library using the `{renv}` package.
+
+- Initialize the project library *once* using `renv::init()`.
+- Once you’ve installed packages, add them to the project library using
+  `renv::snapshot()`.
+- If a project library already exists, install the associated packages
+  with `renv::restore()`.
+
+For more details on using GitHub, Quarto, etc. see [Research Assistant
+Training](https://github.com/marcdotson/ra-training).
