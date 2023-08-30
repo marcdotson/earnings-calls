@@ -1,0 +1,577 @@
+---
+title: "Marketing Language in Financial Earnings Calls"
+author: "Marc Dotson (BYU), Ryan Elder (BYU), Jim Mourey (DePaul), and William Rose (BYU)"
+date: "October 17, 2022"
+title-slide-attributes:
+  data-background-color: "royalblue"
+highlight-style: github
+format: 
+  revealjs:
+    theme: simple
+    slide-number: true
+    overview: true
+    # incremental: true
+    chalkboard: 
+      buttons: false
+      theme: whiteboard
+    # self-contained: true
+    # preview-links: auto
+---
+
+# Overview
+
+## Earnings Calls and Marketing Language
+
+Earnings calls communicate firm performance and garner investor interest, but when and how frequently marketing is referenced during earnings calls remains an open question.
+
+::: {.incremental}
+-   How does company performance impact the strategic use of marketing language?
+-   Do executives use marketing as a scapegoat when companies underperform?
+-   Is marketing employed to try and accelerate high firm performance?
+:::
+
+##  {.smaller}
+
+::: {.incremental}
+### Key Findings
+
+-   Marketing language is associated with **positive** sentiment and **higher** firm performance.
+-   These relationships are **stronger** for consumer-focused and marketing-centric companies.
+
+### Major Contributions
+
+-   Expands the **marketing-finance interface** by exploring the relationships between marketing language, sentiment, and firm performance.
+-   Provides a new **marketing dictionary** specifically for use within financial contexts.
+-   Uncovers **heterogeneity** in the strength of these relationships across firm industries and subgroups and suggests future empirical work.
+:::
+
+# Previous Research
+
+## Earnings Calls
+
+Following the release of quarterly or annual financial results, companies in the US hold earnings calls where company executives present the state of the company, including an overview of earnings.
+
+-   The report is **scripted**.
+-   Discussion section is **unscripted**.
+-   There is no required **transcript format**.
+
+##  {.smaller}
+
+Q2 2015 Comcast Corp Earnings Call - Final\n9589 words\n23 July 2015\nCQ FD Disclosure\nFNDW\nEnglish\n2015 by CQ-Roll Call, Inc. All rights reserved.\nPresentation\nOPERATOR: Good morning, ladies and gentlemen and welcome to Comcast's second-quarter 2015 earnings conference call. (Operator Instructions). Please note that this conference call is being recorded. I will now turn the call over to the Senior Vice President, Investor Relations, Mr. Jason Armstrong. Please go ahead, Mr. Armstrong.\nJASON ARMSTRONG, SVP OF IR, COMCAST CORPORATION: Thank you, operator and welcome, everyone. Joining me on this morning's call are Brian Roberts, Michael Angelakis, Mike Cavanagh, Steve Burke and Neil Smit. Brian and Mike will make formal remarks and Michael, Steve and Neil will also be available for Q&A.\nAs always, let me now refer you to slide number 2, which contains our Safe Harbor disclaimer and remind you that this conference call may include forward-looking statements subject to certain risks and uncertainties.\nIn addition, in this call, we will refer to certain non-GAAP financial measures. Please refer to our 8-K for the reconciliation of non-GAAP financial measures to GAAP. With that, let me turn the call to Brian Roberts for his comments. Brian.\nBRIAN ROBERTS, CHAIRMAN & CEO, COMCAST CORPORATION: Thanks, Jason and good morning, everyone. As this is the first call since the death of my father, I'd like to express my gratitude for the tremendous outpouring of support for me and the entire Comcast family. So many of you recalled your favorite memories and stories and for this I am beyond grateful. And as I think about today reporting on another terrific quarter, it's such a great reflection of the special company Ralph built and I am honored to help lead.\nComcast NBCUniversal has real positive momentum on many fronts and so we are pleased to report that in the second quarter we grew revenue by 11.3% and operating cash flow by 8%. Our growth was broad-based. In Cable, our investments in the customer experience, a faster X1 rollout and our leading broadband network are all paying off. We grew overall customer relationships, added broadband customers and reduced our video losses in half. In fact, this is the best second-quarter result in video that we've had in nine years.\nBut the highlight of the quarter was Universal Pictures and Universal Theme Parks. And overall at NBCUniversal, I just can't say enough great things about the second quarter. Operating cash flow increased 19.4%, following up 14% growth in the first quarter. Steve Burke and his team continue to transform the business and are on track to soon double the operating cash flow since we made our original announcement with GE in 2009.
+
+## Finance Research {.scrollable .smaller}
+
+Research in finance and accounting has explored the impact of **quantitative** and **qualitative** information communicated earnings calls on analyst and investor decisions and behaviors.
+
+::: {.incremental}
+-   Information presented in earnings calls improves analyst forecasts of earnings (Bowen, Davis, & Matsumoto, 2002; Mayew, Sharp, & Venkatachalam, 2013).
+-   What and how information is communicated affects investors (Mayew & Venkatachalam, 2012; Li, 2010; Loughran & McDonald, 2011; Loughran & McDonald, 2016).
+-   Using vivid (vs. pallid) language (e.g., "sales jumped" vs. "sales increased") leads to differential forecasts for firm growth, particularly when information was inconsistent with participant preference (Hales, Kuang, & Venkataraman, 2011).
+-   Extreme language in earnings calls (for example, "exceptional" or "horrible"), leads to subsequent trading volume increases, especially when concrete information is sparse (Bochkay, Hales, & Chava, 2020).
+-   Leads to real time, intraday trading (Frankel, Johnson, & Skinner, 1999) with the tone of analysts during the Q&A portion of earnings calls even more impactful than management tone in driving intraday stock prices (Chen, Nagar, & Schoenfeld, 2018).
+-   Level of optimism in language used in earnings press releases predicts firm performance in subsequent quarters (Davis, Piger, & Sedor, 2012).
+:::
+
+## Marketing-Finance Interface {.scrollable .smaller}
+
+The **marketing-finance interface** refers to a subset of research within marketing that emphasizes the relationship between marketing decisions and finance- or accounting-oriented outcome variables (Edeling et al., 2021).
+
+::: {.incremental}
+-   Linking marketing actions to variations in a firm's stock price (Chan, Josef, & Sougiannis, 2001; Fornell et al., 2006).
+-   How earned social media post sentiment impacts the effect on stock price, trading volume, and risk (Drus & Khalid, 2019; Schweidel & Moe, 2014)
+:::
+
+. . .
+
+No extant research has investigated how variations in the frequency of marketing language relate to finance-related metrics.
+
+# Data
+
+## Data Wrangling {.scrollable}
+
+::: panel-tabset
+### Process
+
+:::{.callout-important}
+## (Pretty) Big Corpus
+
+The resulting corpus has **436 million observations** from 130,531 quarterly earnings call transcripts across 5,430 companies from April 2001 to December 2020.
+:::
+
+```{dot}
+#| fig-width: 10
+digraph G {
+  layout=dot
+  
+  "Corpus" -> "Clean Data";
+  "Query Financial Data" -> "Join Data";
+  "Clean Data" -> "Join Data";
+  "Join Data" -> "Tokenize";
+  "Tokenize" -> "Remove Stop Words";
+}
+```
+
+### Steps
+
+- Start with 178,407 transcripts.
+- Extract the fiscal quarter and year from each transcript.
+
+:::{.callout-note}
+## Fiscal Quarter and Year
+
+Fiscal calendars differ by firm and the calendar date of a given earnings call doesn't (necessarily) correspond to the fiscal quarter and year. Recall that there is no required transcript format.
+:::
+
+- Filter transcripts unlikely to be quarterly earnings calls.
+- Query Compustat's Fundamentals Quarterly (2022) for **quarterly revenue** data and Global Industry Classification Standard (GICS).
+
+:::{.callout-note}
+## GICS
+
+The GICS is a hierarchical taxonomy for categorizing firms based on the good or service they provide, consisting of 11 sectors, 24 groups, 69 industries, and 158 sub-industries.
+:::
+
+- Query the Institutional Brokers' Estimate System (IBES) for **earnings per share** (EPS) and analyst forecasts.
+- Difference EPS and expected EPS, which is referred to in finance as **surprise** (Kasznik & Lev, 1995).
+- Join the corpus to the outcome variables based on company, fiscal quarter, and fiscal year.
+- Filter observations without revenue, EPS, or expected EPS, thus assuming that there is no systematic reason for the absence of such data in either Compustat or IBES.
+- Tokenize the corpus using a **bag-of-words** approach, where each token is a single word or term.
+
+:::{.callout-note}
+## Bag of Words
+
+The bag-of-words approach to text analysis is like linear regression: It's often a gross simplification, but it often gets us pretty far.
+:::
+
+- Remove **stop words** using Loughran and McDonald's (2011) generic stop words list composed for financial documents.
+
+### Code
+
+```{r}
+#| eval: false
+#| echo: true
+
+# Earnings Calls ----------------------------------------------------------
+# Load packages.
+library(tidyverse)
+library(GICS) # Install using devtools::install_github("bautheac/GICS").
+
+# Import all earning call transcripts and separate the doc_id.
+transcripts <- read_rds(here::here("Data", "transcripts.rds")) |> 
+  tibble() |> 
+  separate(doc_id, into = c("gvkey", "call_date", "title"), sep = "_")
+
+# Import copywrite statements to exclude from the transcripts.
+copywrite <- read_rds(here::here("Data", "copywrite_statements.rds"))
+
+# Clean and filter so we have transcripts that have the correct quarter and year.
+call_data <- transcripts |> 
+  mutate(
+    title = str_to_lower(title),                                     # Make titles lowercase.
+    text = str_replace_all(text, "\r?\n|\r", " "),                   # Remove carriage returns.
+    first_line = str_trunc(text, 1000) |> str_to_lower()             # Extract the first line.
+  ) |> 
+  # Filter transcripts that are unlikely to be earning calls.
+  anti_join(
+    bind_rows(
+      filter(transcripts, grepl("abstract|(event brief)", title)),   # Filter transcripts with "abstract" or "event brief".
+      filter(transcripts, grepl(str_c(
+        "(full year)|annual", "|",                                   # Filter transcripts with "full year", "annual" or
+        "preliminary|interim|fiscal", "|",                           # "preliminary", "interim", "fiscal" or
+        "(half year)|(year end)|yearend"                             # "half year", "year end", or "yearend"
+      ), title), !grepl("quarter|q\\d|q\\d\\d|\\dq|\\d\\dq", title)) # but without "quarter", "q#", "q##", "#q", "##q".
+    ), 
+    by = c("gvkey", "call_date", "title")
+  ) |>
+  # Extract the quarter from the title or the beginning of the text.
+  mutate(
+    call_date = lubridate::mdy(call_date),
+    quarter = str_extract(title, str_c(
+      "((\\w+)(?=\\squarter))", "|",                                 # Extract word before "quarter" or
+      "((\\w+)(?=-quarter))", "|",                                   # word before "-quarter" or
+      "((?<=quarter-\\s)(\\w+)|(\\d))", "|",                         # word or "#" after "quarter-" or
+      "((q\\d)|(q\\d\\d)|(\\dq)|(\\d\\dq))"                          # "q#", "q##", "#q", "##q".
+    )),
+    quarter = case_when(
+      str_detect(quarter, "first|1st|q1|q01|1q|01q") ~ "1",
+      str_detect(quarter, "second|2nd|q2|q02|2q|02q") ~ "2",
+      str_detect(quarter, "third|3rd|q3|q03|3q|03q") ~ "3",
+      str_detect(quarter, "fourth|4th|q4|q04|4q|04q") ~ "4"
+    ),
+    quarter = ifelse(!is.na(quarter), quarter, str_extract(first_line, str_c(
+      "((\\w+)(?=\\squarter))", "|",                                 # Extract word before "quarter" or
+      "((\\w+)(?=-quarter))", "|",                                   # word before "-quarter" or
+      "((?<=quarter-\\s)(\\w+)|(\\d))", "|",                         # word or "#" after "quarter-" or
+      "((q\\d)|(q\\d\\d)|(\\dq)|(\\d\\dq))"                          # "q#", "q##", "#q", "##q".
+    ))),
+    quarter = case_when(
+      str_detect(quarter, "1|first|1st|q1|q01|1q|01q") ~ "1",
+      str_detect(quarter, "2|second|2nd|q2|q02|2q|02q") ~ "2",
+      str_detect(quarter, "3|third|3rd|q3|q03|3q|03q") ~ "3",
+      str_detect(quarter, "4|fourth|4th|q4|q04|4q|04q") ~ "4"
+    ),
+    # Extract the year from the title or the beginning of the text.
+    year = str_extract(title, str_c(
+      "(20\\d\\d)", "|",                                             # Extract year "20##" or
+      "((?<=q\\d\\s)(\\d\\d))", "|",                                 # "##" after "q#" or
+      "((?<=q\\d\\d\\s)(\\d\\d))", "|",                              # "##" after "q##" or
+      "((?<=\\dq\\s)|(?<=\\dq)(\\d\\d))", "|",                       # "##" after "#q" or
+      "((?<=\\d\\dq\\s)|(?<=\\d\\dq)(\\d\\d))", "|",                 # "##" after "##q" or
+      "((?<=')(\\d\\d))", "|",                                       # "##" after "'" or
+      "((?<=fy\\s)(\\d\\d)|(?<=fy)(\\d\\d))"                         # "##" after "fy " or "fy".
+    )),
+    year = ifelse(!is.na(year), year, str_extract(first_line, str_c(
+      "(20\\d\\d)", "|",                                             # Extract year "20##" or
+      "((?<=q\\d\\s)(\\d\\d))", "|",                                 # "##" after "q#" or
+      "((?<=q\\d\\d\\s)(\\d\\d))", "|",                              # "##" after "q##" or
+      "((?<=\\dq\\s)|(?<=\\dq)(\\d\\d))", "|",                       # "##" after "#q" or
+      "((?<=\\d\\dq\\s)|(?<=\\d\\dq)(\\d\\d))", "|",                 # "##" after "##q" or
+      "((?<=')(\\d\\d))", "|",                                       # "##" after "'" or
+      "((?<=fy\\s)(\\d\\d)|(?<=fy)(\\d\\d))"                         # "##" after "fy " or "fy".
+    ))),
+    # Clean up quarter and year.
+    quarter = as.numeric(quarter),
+    year = str_pad(year, 3, side = c("left"), pad = "0"),
+    year = str_pad(year, 4, side = c("left"), pad = "2"),
+    year = as.numeric(year),
+    year = ifelse(year > 2021, NA, year),
+    # If there is no year, quarters 1 and 2 have a FY = calendar year - 1, otherwise use calendar year.
+    year = ifelse(is.na(year) & quarter %in% c(1, 2), lubridate::year(call_date) - 1, year),
+    year = ifelse(is.na(year) & quarter %in% c(3, 4), lubridate::year(call_date), year)
+  ) |>
+  # Remove extraneous copywrite statements.
+  mutate(
+    text = str_remove_all(text, copywrite[1]),
+    text = str_remove_all(text, copywrite[2]),
+    text = str_remove_all(text, copywrite[3]),
+    text = str_remove_all(text, copywrite[4]),
+    text = str_remove_all(text, copywrite[5])
+  ) |> 
+  drop_na(quarter) |>
+  drop_na(year) |> 
+  # Finally, ensure UTF-8 encoding for the titles and text.
+  mutate(
+    title = iconv(title, to = "UTF-8"),
+    text = iconv(text, to = "UTF-8")
+  )
+  
+call_data
+
+# Firm Performance --------------------------------------------------------
+# Create a plain text file (.txt) with one GVKEY code per line
+# for pulling quarterly revenue and industry data from Computstat.
+call_data |> 
+  count(gvkey) |> 
+  select(gvkey) |> 
+  write_tsv(here::here("Private", "Compustat GVKEYs.txt"), col_names = FALSE)
+
+# Import the GICS standards and rename variables to match Compustat data.
+data(standards)
+gics <- standards |> 
+  rename(
+    gsector = `sector id`,
+    sector = `sector name`,
+    ggroup = `industry group id`,
+    group = `industry group name`,
+    gind = `industry id`,
+    industry = `industry name`,
+    gsubind = `subindustry id`,
+    sub_industry = `subindustry name`
+  )
+
+# Import Compustat fundamentals quarterly with the following filters:
+# - Consolidation Level: C
+# - Industry Format: INDL
+# - Data Format: STD
+# - Population Source: D
+# - Quarter Type: Fiscal View
+# - Currency: USD
+# - Company Status: Active and Inactive
+firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")) |> 
+  mutate(
+    gvkey = str_pad(gvkey, 6, side = c("left"), pad = "0"),
+    name = conm,
+    year = fyearq,
+    quarter = fqtr,
+    revenue = revtq
+  ) |> 
+  # Use the GICS standards to get sector, group, industry, and sub-industry names.
+  left_join(select(gics, gsector, sector) |> distinct(), by = "gsector") |> 
+  left_join(select(gics, ggroup, group) |> distinct(), by = "ggroup") |> 
+  left_join(select(gics, gind, industry) |> distinct(), by = "gind") |> 
+  left_join(select(gics, gsubind, sub_industry) |> distinct(), by = "gsubind") |> 
+  select(gvkey, tic, name, year, quarter, revenue, sector, group, industry, sub_industry)
+
+firm_data
+
+# Expected Firm Performance -----------------------------------------------
+# Import analyst forecasts from IBES (see Python code for query and link
+# to Compustat data).
+ibes_data <- read_csv(here::here("Data", "IBES.csv")) |> 
+  mutate(
+    gvkey = str_pad(gvkey, 6, side = c("left"), pad = "0"),
+    year = fyearq,
+    quarter = fqtr,
+    earnings = act,
+    forecast = medest
+  ) |> 
+  select(gvkey, year, quarter, earnings, forecast, contains("sue"))
+
+ibes_data
+
+# Join Data ---------------------------------------------------------------
+# Join the earnings calls, firm performance, and expected performance data.
+call_data <- call_data |>
+  inner_join(firm_data, by = c("gvkey", "year", "quarter")) |> 
+  inner_join(ibes_data, by = c("gvkey", "year", "quarter")) |> 
+  # Drop any observations that don't have outcome data.
+  drop_na(revenue, earnings, forecast) |> 
+  # Add an id and differences.
+  mutate(
+    id = row_number(),
+    difference = earnings - forecast
+  ) |>
+  # Make year_quarter variable to arrange data chronologically by firm.
+  unite(year_quarter, year, quarter, remove = FALSE) |> 
+  # Lead outcome data by firm.
+  group_by(gvkey) |> 
+  arrange(year_quarter) |> 
+  mutate(
+    revenue_lead = lead(revenue, order_by = year_quarter),
+    earnings_lead = lead(earnings, order_by = year_quarter),
+    difference_lead = lead(difference, order_by = year_quarter)
+  ) |> 
+  ungroup() |>
+  # Select variables in order.
+  select(
+    id, gvkey, tic, name, sector, group, industry, sub_industry,
+    call_date, year, quarter, revenue, earnings, forecast, difference,
+    contains("lead"), title, text, contains("sue")
+  )
+
+call_data
+
+# Write call data.
+write_rds(call_data, here::here("Data", "call_data.rds"))
+
+# Tokenize and Remove Stop Words ------------------------------------------
+# Load packages.
+library(tidyverse)
+library(tidytext)
+
+# Import call data.
+call_data <- read_rds(here::here("Data", "call_data.rds")) |>
+  mutate(
+    title_text = str_c(title, text, " "),                 # Combine title and text.
+    title_text = str_replace_all(text, "[:punct:]", " ")  # Strip punctuation to deal with contractions.
+  ) |> 
+  select(id, title_text)                                  # Select only id and title_text to reduce memory demand.
+
+call_data
+
+# # Mutate can take a bit to run, so we can save it as temp_call.rds.
+# # write_rds(call_data, here::here("Data", "temp_call.rds"))
+# call_data <- read_rds(here::here("Data", "temp_call.rds"))
+
+# Import L&M generic stop words (not including clmd and lmn marketing terms).
+generic_stopwords <- read_rds(here::here("Data", "generic_stopwords_long.rds"))
+
+generic_stopwords
+
+# Tokenize call data in sets to avoid memory loss and limits.
+# (If we need to revisit tokenizing, consider how to parallelize.)
+num_splits <- 30
+for (i in seq_along(1:num_splits)) {
+  # Specify the start and end rows for each of the sets.
+  start <- round(nrow(call_data)/num_splits * (i - 1)) + 1
+  end <- round(nrow(call_data)/num_splits * i)
+  
+  # Name assignment is based on index variable.
+  tokens_name <- str_c("tokens_", i, ".rds")
+  
+  # Tokenize and assign to a separate object each iteration.
+  tokens <- call_data |> 
+    # Slice the data.
+    slice(start:end) |> 
+    # Strip punctuation to deal with contractions.
+    unnest_tokens(word, title_text, strip_punct = TRUE) |> 
+    # Clean up contractions.
+    mutate(
+      word = case_when(
+        word == "ll" ~ "will",
+        word == "ve" ~ "have",
+        word == "t" ~ "not",
+        word == "d" ~ "had",
+        word == "s" ~ "is",
+        word == "re" ~ "are",
+        TRUE ~ word
+      )
+    ) |> 
+    # Remove generic stop words.
+    anti_join(generic_stopwords) |> 
+    # Save tokens with associated id.
+    write_rds(here::here("Data", tokens_name))
+
+    # Remove objects to reduce memory demand.
+    rm(tokens, tokens_name)
+}
+
+# Bind Data ---------------------------------------------------------------
+# Remove data that no longer needs to be held in memory.
+rm(call_data, generic_stopwords)
+
+# Re-import complete call_data except for text.
+call_data <- read_rds(here::here("Data", "call_data.rds")) |> 
+  select(-text)
+
+# Bind sliced tokenized data.
+word_tokens <- NULL
+for (i in 1:num_splits) {
+  # Recreate saved file names.
+  tokens_name <- str_c("tokens_", i, ".rds")
+  
+  # Import saved files.
+  tokens <- read_rds(here::here("Data", tokens_name)) |>
+    group_by(id) |> 
+    # Nesting words by id, reducing memory demand (this can always be undone with unnest()).
+    nest(words = c(word)) |> 
+    # Rejoin firm data.
+    left_join(call_data, by = "id")
+  
+  # Bind sliced data to main data frame.
+  word_tokens <- word_tokens |>
+    bind_rows(tokens)
+  
+  # Remove rows from call_data that have been joined. This reduces memory demand and 
+  # highlights any documents which might have been missed.
+  call_data <- call_data |> anti_join(word_tokens, by = "id")
+  
+  # Delete sliced tokenized data.
+  unlink(here::here("Data", tokens_name))
+}
+
+# Ungroup word_tokens.
+word_tokens <- word_tokens |> ungroup()
+
+word_tokens
+
+# Write word_tokens.
+write_rds(word_tokens, here::here("Data", "word_tokens.rds"))
+```
+:::
+
+---
+
+![](../Figures/overall-word_counts.png)
+
+## Marketing Dictionary {.smaller}
+
+Our marketing dictionary was constructed and validated following the method outlined in Berger et al. (2020), with some slight modifications.
+
+::: {.incremental}
+- Started with the Loughran and McDonald dictionary (2011), which contains 86,531 words.
+- First populated using unigrams drawn from the Common Language Marketing Dictionary (CLMD).
+- Words that did not occur within any of the documents in the original Loughran and McDonald (2011) dataset or did not occur among the 436 million words of our dataset were removed from the validation task.
+- Three independent coders manually identifed marketing terms from the list.
+- In addition, one of the researchers validated the final list.
+:::
+
+## {auto-animate=true}
+
+![](../Figures/overall-marketing_terms.png)
+
+## {auto-animate=true}
+
+::: {layout-ncol=2}
+![](../Figures/overall-marketing_terms.png)
+
+![](../Figures/overall-word_counts.png)
+:::
+
+## Counts and Proportions {.smaller}
+
+With a tokenized corpus and a validated marketing dictionary, it's simply a matter of **counting** the marketing terms in each transcript.
+
+::: {.incremental}
+- Similarly employed Loughran and McDonald's (2011) sentiment dictionary to identify positive and negatively valenced terms within a financial context.
+- Used the LIWC-22 Future Oriented Words dictionary (Pennebaker et al., 2022) given the role of earnings calls to sell investors on a company's future success.
+:::
+
+. . .
+
+We control for variation in earnings call length relative to term use by **calculating the proportion** of marketing and other terms used within each earnings call.
+
+# Results
+
+##  
+
+| *Variable*   | *Definition* |
+| :----------- | :------------------------------------------------------------------ |
+| `marketing` | Proportion of marketing terms. |
+| `positive` | Proportion of positive terms. |
+| `negative` | Proportion of negative terms. |
+| `future` | Proportion of future-oriented terms. |
+| `revenue` | Reported quarterly revenue in millions of US dollars. |
+| `surprise` | Actual quarterly EPS subtract the median forecasted quarterly EPS. |
+| `earnings` | Quarterly EPS in US dollars. |
+
+## {auto-animate=true}
+
+![](../Figures/overall-correlation.png)
+
+## {auto-animate=true}
+
+::: {layout-ncol=2}
+![](../Figures/overall-correlation.png)
+
+![](../Figures/sector-correlation.png)
+:::
+
+## 
+
+::: {layout-ncol=2}
+![](../Figures/overall-correlation.png)
+
+![](../Figures/sector-consumer_discretionary-correlation.png)
+:::
+
+## 
+
+::: {layout-ncol=2}
+![](../Figures/sector-consumer_discretionary-correlation.png)
+
+![](../Figures/group-consumer_durables-correlation.png)
+:::
+
+## 
+
+![](../Figures/overall-collocation.png)
+
+##  {.smaller}
+
+### Key Findings
+
+-   Marketing language is associated with **positive** sentiment and **higher** firm performance.
+-   These relationships are **stronger** for consumer-focused and marketing-centric companies.
+
+### Major Contributions
+
+-   Expands the **marketing-finance interface** by exploring the relationships between marketing language, sentiment, and firm performance.
+-   Provides a new **marketing dictionary** specifically for use within financial contexts.
+-   Uncovers **heterogeneity** in the strength of these relationships across firm industries and subgroups and suggests future empirical work.
+
+# Future Research
+
+## Modeling
+
+A hierarchical Bayesian time series with heterogeneous treatment effects.
+
+::: {.incremental}
+- The scale of the data demands both **dimension reduction** in the term space and an **expansion of lags** across quarters.
+- Account for **heterogeneity** by identifying meaningful groups and allowing for group-level effects.
+- The strategic nature of scripted presentation and unscripted response requires carefully addressing **endogeneity**.
+:::
+
+# Thank You!
+[github.com/marcdotson/earnings-calls](https://github.com/marcdotson/earnings-calls)
+
