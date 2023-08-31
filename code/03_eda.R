@@ -1,7 +1,6 @@
 # Visualize Word Counts ---------------------------------------------------
 # Load packages.
 library(tidyverse)
-library(lubridate)
 library(tidytext)
 library(textdata)
 library(corrr)
