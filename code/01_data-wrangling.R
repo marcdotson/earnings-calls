@@ -4,12 +4,12 @@ library(tidyverse)
 library(GICS) # Install using devtools::install_github("bautheac/GICS").
 
 # Import all earning call transcripts and separate the doc_id.
-transcripts <- read_rds(here::here("Data", "transcripts.rds")) |> 
+transcripts <- read_rds(here::here("data", "transcripts.rds")) |> 
   tibble() |> 
   separate(doc_id, into = c("gvkey", "call_date", "title"), sep = "_")
 
 # Import copywrite statements to exclude from the transcripts.
-copywrite <- read_rds(here::here("Data", "copywrite_statements.rds"))
+copywrite <- read_rds(here::here("data", "copywrite_statements.rds"))
 
 # Clean and filter so we have transcripts that have the correct quarter and year.
 call_data <- transcripts |> 
@@ -110,7 +110,7 @@ call_data
 call_data |> 
   count(gvkey) |> 
   select(gvkey) |> 
-  write_tsv(here::here("Private", "Compustat GVKEYs.txt"), col_names = FALSE)
+  write_tsv(here::here("private", "Compustat GVKEYs.txt"), col_names = FALSE)
 
 # Import the GICS standards and rename variables to match Compustat data.
 data(standards)
@@ -134,7 +134,7 @@ gics <- standards |>
 # - Quarter Type: Fiscal View
 # - Currency: USD
 # - Company Status: Active and Inactive
-firm_data <- read_csv(here::here("Data", "Compustat Fundamentals Quarterly.csv")) |> 
+firm_data <- read_csv(here::here("data", "Compustat Fundamentals Quarterly.csv")) |> 
   mutate(
     gvkey = str_pad(gvkey, 6, side = c("left"), pad = "0"),
     name = conm,
@@ -154,7 +154,7 @@ firm_data
 # Expected Firm Performance -----------------------------------------------
 # Import analyst forecasts from IBES (see Python code for query and link
 # to Compustat data).
-ibes_data <- read_csv(here::here("Data", "IBES.csv")) |> 
+ibes_data <- read_csv(here::here("data", "IBES.csv")) |> 
   mutate(
     gvkey = str_pad(gvkey, 6, side = c("left"), pad = "0"),
     year = fyearq,
@@ -199,5 +199,5 @@ call_data <- call_data |>
 call_data
 
 # Write call data.
-write_rds(call_data, here::here("Data", "call_data.rds"))
+write_rds(call_data, here::here("data", "call_data.rds"))
 
