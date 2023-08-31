@@ -4,8 +4,9 @@ library(tidyverse)
 library(tidytext)
 library(widyr)
 library(furrr)
+
 # Import nested word tokens.
-word_tokens <- read_rds(here::here("Data", "word_tokens.rds")) |> select(id, words)
+word_tokens <- read_rds(here::here("data", "word_tokens.rds")) |> select(id, words)
 
 word_tokens 
 
@@ -18,7 +19,7 @@ word_dict <- word_dict |>
   mutate(word_ind = as.character(seq(1, nrow(word_dict)))) |> 
   select(-n)
 
-write_rds(word_dict, here::here("Data", "word_dict"))
+write_rds(word_dict, here::here("data", "word_dict"))
 
 word_tokens_hashed <- word_tokens |> 
   unnest(cols = words) |>
@@ -28,7 +29,7 @@ word_tokens_hashed <- word_tokens |>
 
 
 # 6.7 GB
-write_rds(word_tokens_hashed,  here::here("Data", "word_tokens_hashed.rds"))
+write_rds(word_tokens_hashed,  here::here("data", "word_tokens_hashed.rds"))
 
 
 word_tokens_unhashed <- word_tokens |> 
@@ -37,15 +38,15 @@ word_tokens_unhashed <- word_tokens |>
 
 
 # 7.4 GB
-write_rds(word_tokens_unhashed,  here::here("Data", "word_tokens_unhashed.rds"))
+write_rds(word_tokens_unhashed,  here::here("data", "word_tokens_unhashed.rds"))
 
 word_tokens_int_hashed <- word_tokens |> 
   mutate(word_ind = as.integer(word_ind))
 
 # 3.2 GB
-write_rds(word_tokens_int_hashed,  here::here("Data", "word_tokens_int_hashed.rds"))
+write_rds(word_tokens_int_hashed,  here::here("data", "word_tokens_int_hashed.rds"))
 
-word_tokens_int_hashed <- read_rds(here::here("Data", "word_tokens_int_hashed.rds"))
+word_tokens_int_hashed <- read_rds(here::here("data", "word_tokens_int_hashed.rds"))
 # custom_stop_words <- word_counts |> 
   # arrange(desc(n)) |> 
   # mutate(id = row_number()) |> 
@@ -193,7 +194,7 @@ for (i in 1:num_splits) {
   pmi_name <- str_c("test_pmi_", i, ".rds")
   
   # Import saved files.
-  test_pmi <- read_rds(here::here("Data", pmi_name))
+  test_pmi <- read_rds(here::here("data", pmi_name))
   # Bind sliced data to main data frame.
   tidy_pmi <- tidy_pmi |>
     bind_rows(test_pmi)
@@ -204,14 +205,14 @@ for (i in 1:num_splits) {
 }
 
 
-first_pmi <- read_rds(here::here("Data", "test_pmi_1.rds")) |> unnest(words) |> 
+first_pmi <- read_rds(here::here("data", "test_pmi_1.rds")) |> unnest(words) |> 
   unite(window_id, id, window_id)  
 for (i in 2:num_splits) {
   # Recreate saved file names.
   pmi_name <- str_c("test_pmi_", i, ".rds")
   
   # Import saved files.
-  test_pmi <- read_rds(here::here("Data", pmi_name))
+  test_pmi <- read_rds(here::here("data", pmi_name))
   # Bind sliced data to main data frame.
   test_pmi <- test_pmi |> unnest(words) |> 
     unite(window_id, id, window_id) |> 
@@ -223,7 +224,7 @@ for (i in 2:num_splits) {
   mutate(pmi = pmi + new_pmi) |> 
   select(item1, item2, pmi)
   
-  write_rds(first_pmi, here::here("Data", "first_pmi.rds"))
+  write_rds(first_pmi, here::here("data", "first_pmi.rds"))
 
 }
 
@@ -254,7 +255,7 @@ for (i in seq_along(1:num_splits)) {
     slice_head(n = -12) |> 
     unite(window_id, id, window_id) |> 
     nest(words = c(word_ind, window_id)) |> 
-    write_rds(here::here("Data", pmi_name))
+    write_rds(here::here("data", pmi_name))
   
   
   rm(tidy_pmi, pmi_name)
@@ -264,7 +265,7 @@ for (i in seq_along(1:num_splits)) {
 
 rm(word_tokens_int_hashed)
 
-write_rds(tidy_pmi, here::here("Data", "tidy_pmi_4.rds"))
+write_rds(tidy_pmi, here::here("data", "tidy_pmi_4.rds"))
 #### SELECT BEFORE PMI??
   
 
@@ -298,9 +299,9 @@ tidy_word_vectors <- test_pmi %>%
 
 # Save word_embeddings...
 
-write_rds(tidy_word_vectors, here::here("Data", "tidy_word_vectors_4.rds"))
+write_rds(tidy_word_vectors, here::here("data", "tidy_word_vectors_4.rds"))
 
-word_dict <- read_rds(here::here("Data", "word_dict"))
+word_dict <- read_rds(here::here("data", "word_dict"))
 
 tidy_word_vectors <- tidy_word_vectors |> 
   rename(word_ind = item1) |> 
@@ -351,14 +352,14 @@ negative <- get_sentiments("loughran") |>
 
 
 
-tidy_pmi <- read_rds(here::here("Data", "word_tokens_int_hashed.rds")) |> 
+tidy_pmi <- read_rds(here::here("data", "word_tokens_int_hashed.rds")) |> 
   group_by(id) |> 
   mutate(word_order = row_number()) 
 
-word_dict <- read_rds(here::here("Data", "word_dict"))
+word_dict <- read_rds(here::here("data", "word_dict"))
 
 
-lnm <- read_rds(here::here("Data", "lnm.rds"))
+lnm <- read_rds(here::here("data", "lnm.rds"))
 positive <- get_sentiments("loughran") |> 
   filter(sentiment == "positive") |> 
   select(word)
@@ -448,7 +449,7 @@ tidy_pmi_loop  |>
   ungroup() |> 
   group_by(word) |> 
   nest(words = c(word_ind, window_id)) |> 
-  write_rds(here::here("Data", pmi_name))
+  write_rds(here::here("data", pmi_name))
 
 rm(tidy_pmi_loop, pmi_name)
 
@@ -466,3 +467,4 @@ tidy_pmi <- tidy_pmi |>
 tidy_pmi <- tidy_pmi |> semi_join(combo, by="word_ind")
 
 pairwise_similarity()
+

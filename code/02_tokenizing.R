@@ -4,7 +4,7 @@ library(tidyverse)
 library(tidytext)
 
 # Import call data.
-call_data <- read_rds(here::here("Data", "call_data.rds")) |>
+call_data <- read_rds(here::here("data", "call_data.rds")) |>
   mutate(
     title_text = str_c(title, text, " "),                 # Combine title and text.
     title_text = str_replace_all(text, "[:punct:]", " ")  # Strip punctuation to deal with contractions.
@@ -18,7 +18,7 @@ call_data
 # call_data <- read_rds(here::here("Data", "temp_call.rds"))
 
 # Import L&M generic stop words (not including clmd and lmn marketing terms).
-generic_stopwords <- read_rds(here::here("Data", "generic_stopwords_long.rds"))
+generic_stopwords <- read_rds(here::here("data", "generic_stopwords_long.rds"))
 
 generic_stopwords
 
@@ -65,7 +65,7 @@ for (i in seq_along(1:num_splits)) {
 rm(call_data, generic_stopwords)
 
 # Re-import complete call_data except for text.
-call_data <- read_rds(here::here("Data", "call_data.rds")) |> 
+call_data <- read_rds(here::here("data", "call_data.rds")) |> 
   select(-text)
 
 # Bind sliced tokenized data.
@@ -75,7 +75,7 @@ for (i in 1:num_splits) {
   tokens_name <- str_c("tokens_", i, ".rds")
   
   # Import saved files.
-  tokens <- read_rds(here::here("Data", tokens_name)) |>
+  tokens <- read_rds(here::here("data", tokens_name)) |>
     group_by(id) |> 
     # Nesting words by id, reducing memory demand (this can always be undone with unnest()).
     nest(words = c(word)) |> 
@@ -91,7 +91,7 @@ for (i in 1:num_splits) {
   call_data <- call_data |> anti_join(word_tokens, by = "id")
   
   # Delete sliced tokenized data.
-  unlink(here::here("Data", tokens_name))
+  unlink(here::here("data", tokens_name))
 }
 
 # Ungroup word_tokens.
@@ -100,5 +100,5 @@ word_tokens <- word_tokens |> ungroup()
 word_tokens
 
 # Write word_tokens.
-write_rds(word_tokens, here::here("Data", "word_tokens.rds"))
+write_rds(word_tokens, here::here("data", "word_tokens.rds"))
 

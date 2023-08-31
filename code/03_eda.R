@@ -10,8 +10,8 @@ library(latex2exp)
 
 # Import word tokens and the marketing dictionary validated from 
 # Loughran and McDonald's financial dictionary.
-word_tokens <- read_rds(here::here("Data", "word_tokens.rds"))
-lnm <- read_rds(here::here("Data", "lnm.rds"))
+word_tokens <- read_rds(here::here("data", "word_tokens.rds"))
+lnm <- read_rds(here::here("data", "lnm.rds"))
 
 # Indicate GICS subset.
 ind_overa <- 1
@@ -70,7 +70,7 @@ if (ind_overa != 1) {
 }
 
 ggsave(
-  filename = here::here("Figures", str_c(name, "-word_counts.png")),
+  filename = here::here("figures", str_c(name, "-word_counts.png")),
   width = 7, height = 5, units = "in", limitsize = FALSE
 )
 
@@ -104,7 +104,7 @@ if (ind_overa != 1) {
 }
 
 ggsave(
-  filename = here::here("Figures", str_c(name, "-marketing_terms.png")),
+  filename = here::here("figures", str_c(name, "-marketing_terms.png")),
   width = 7, height = 5, units = "in", limitsize = FALSE
 )
 
@@ -113,7 +113,7 @@ ggsave(
 rm(word_counts)
 
 # Import the top advertisers from each calendar year.
-top_ads <- read_csv(here::here("Data", "Top Advertisers.csv")) |>
+top_ads <- read_csv(here::here("data", "Top Advertisers.csv")) |>
   mutate(
     name = str_to_upper(name),
     name = str_remove(name, "\\.$")
@@ -128,7 +128,7 @@ negative <- get_sentiments("loughran") |>
   select(word)
 
 # Import the future words dictionary.
-future <- read_csv(here::here("Data", "Future Focused Words.csv"))
+future <- read_csv(here::here("data", "Future Focused Words.csv"))
 
 # Compute counts by id of marketing terms.
 id_counts <- word_tokens |> 
@@ -168,7 +168,7 @@ id_counts
 
 # Save and load intermediate steps, as needed.
 # write_rds(id_counts, here::here("Data", "id_counts.rds"))
-id_counts <- read_rds(here::here("Data", "id_counts.rds"))
+id_counts <- read_rds(here::here("data", "id_counts.rds"))
 
 # Visualize the overall correlation matrix.
 # Run correlation tests.
@@ -231,7 +231,7 @@ id_counts |>
   )
 
 ggsave(
-  filename = here::here("Figures", "overall-correlation.png"),
+  filename = here::here("figures", "overall-correlation.png"),
   width = 7, height = 6, units = "in", limitsize = FALSE
 )
 
@@ -298,7 +298,7 @@ id_counts |>
   )
 
 ggsave(
-  filename = here::here("Figures", "sector-consumer_discretionary-correlation.png"),
+  filename = here::here("figures", "sector-consumer_discretionary-correlation.png"),
   width = 7, height = 6, units = "in", limitsize = FALSE
 )
 
@@ -365,7 +365,7 @@ id_counts |>
   )
 
 ggsave(
-  filename = here::here("Figures", "group-consumer_durables-correlation.png"),
+  filename = here::here("figures", "group-consumer_durables-correlation.png"),
   width = 7, height = 6, units = "in", limitsize = FALSE
 )
 
@@ -432,7 +432,7 @@ top_ads |>
   )
 
 ggsave(
-  filename = here::here("Figures", "top_advertisers-correlation.png"),
+  filename = here::here("figures", "top_advertisers-correlation.png"),
   width = 7, height = 6, units = "in", limitsize = FALSE
 )  
 
@@ -540,7 +540,7 @@ if (ind_sectr == 1) {
     )
 
   ggsave(
-    filename = here::here("Figures", str_c(name, "-correlation-01.png")),
+    filename = here::here("figures", str_c(name, "-correlation-01.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
 
@@ -552,7 +552,7 @@ if (ind_sectr == 1) {
     )
 
   ggsave(
-    filename = here::here("Figures", str_c(name, "-correlation-02.png")),
+    filename = here::here("figures", str_c(name, "-correlation-02.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
 }
@@ -580,7 +580,7 @@ if (ind_group == 1) {
     )
 
   ggsave(
-    filename = here::here("Figures", str_c(name, "-correlation-01.png")),
+    filename = here::here("figures", str_c(name, "-correlation-01.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
 
@@ -592,7 +592,7 @@ if (ind_group == 1) {
     )
 
   ggsave(
-    filename = here::here("Figures", str_c(name, "-correlation-02.png")),
+    filename = here::here("figures", str_c(name, "-correlation-02.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
 
@@ -604,7 +604,7 @@ if (ind_group == 1) {
     )
 
   ggsave(
-    filename = here::here("Figures", str_c(name, "-correlation-03.png")),
+    filename = here::here("figures", str_c(name, "-correlation-03.png")),
     width = 14, height = 18, units = "in", limitsize = FALSE
   )
 
@@ -616,7 +616,7 @@ if (ind_group == 1) {
     )
 
   ggsave(
-    filename = here::here("Figures", str_c(name, "-correlation-04.png")),
+    filename = here::here("figures", str_c(name, "-correlation-04.png")),
     width = 14, height = 12, units = "in", limitsize = FALSE
   )
 }
@@ -644,7 +644,7 @@ if (ind_group == 1) {
 #   labs(title = "Revenue Over Time by Year/Quarter")
 # 
 # # ggsave(
-# #   filename = here::here("Figures", "revenue_by_year_quarter.png"),
+# #   filename = here::here("figures", "revenue_by_year_quarter.png"),
 # #   width = 4, height = 7, units = "in"
 # # )
 
