@@ -1,10 +1,31 @@
-# Using the word embeddings.
-
-# Topic modeling.
+# Clustering on Word Embeddings -------------------------------------------
 # Load packages.
 library(tidyverse)
 library(tidytext)
 library(topicmodels)
+
+# Import completed word embeddings.
+# Update placeholder code.
+
+# K-means.
+fit_tune_w2v <- tibble(k = 1:15) |>
+  mutate(
+    fit_km = pmap(list(centers = k), kmeans, x = w2v_vectors[1:300]),
+    model_fit = map(fit_km, glance)
+  ) |>
+  unnest(model_fit) 
+
+ggplot(fit_tune_w2v, aes(x = k, y = tot.withinss)) +
+  geom_point() +
+  geom_line()
+
+# Affinity Propagation on Word Embeddings ---------------------------------
+
+
+
+# Topic Modeling with Word Counts -----------------------------------------
+# Import tokens and produce counts.
+# Update placeholder code.
 
 # Create a DTM.
 dtm <- word_tokens %>%
@@ -44,4 +65,3 @@ fit_lda2 %>%
   facet_wrap(~ topic, scales = "free") +
   scale_y_reordered()
 
-# Supervised learning using the revenue.
