@@ -10,6 +10,8 @@ word_tokens <- read_rds(here::here("data", "word_tokens.rds")) |>
 
 word_tokens
 
+# Question: What is the benefit of turning tokens into numeric IDs?
+
 # Specify number of embeddings/dimensions and import pre-trained word embeddings 
 # (data downloaded from https://nlp.stanford.edu/projects/glove/).
 n_embeddings <- 50
@@ -31,6 +33,11 @@ write_rds(
   word_embeddings,
   here::here("data", str_c("word_embeddings-glove_", n_embeddings, ".rds"))
 )
+
+# Question: When we cluster on word embeddings, is there any reason to *not*
+# de-duplicate the tokens into a dictionary? Unlike a topic modeling, there
+# is no information on co-occurrence within documents that is part of the
+# unsupervised technique, right?
 
 # Pre-Trained Transformer -------------------------------------------------
 
