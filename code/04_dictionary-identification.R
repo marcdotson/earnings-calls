@@ -1,18 +1,25 @@
 # Word Tokens and Pre-Trained Word Embeddings -----------------------------
 # Load packages.
 library(tidyverse)
+library(tidymodels)
 library(tidytext)
 library(topicmodels)
 
 # Import word tokens.
-word_tokens <- read_rds(here::here("data", "word_tokens.rds")) |> 
-  select(id, words) |> 
-  unnest(cols = words)
+# word_tokens <- read_rds(here::here("data", "word_tokens.rds")) |>
+#   select(id, words) |>
+#   unnest(cols = words)
+# 
+# word_tokens
+# 
+# # set.seed(42)
+# # word_tokens |>
+# #   sample_n(size = 1000000) |> 
+# #   write_delim(here::here("data", "word_tokens_sample.txt"))
+
+word_tokens <- read_delim(here::here("data", "word_tokens_sample.txt"))
 
 word_tokens
-
-# write_delim(word_tokens, here::here("data", "word_tokens.txt"))
-# word_tokens <- read_delim(here::here("data", "word_tokens.txt"))
 
 # De-duplicate word tokens to form a dictionary. Unlike topic
 # modeling, co-occurrence doesn't inform clustering algorithms.
@@ -27,7 +34,7 @@ n_embeddings <- 50
 glove_embeddings <- read_delim(
   here::here("data", "glove", str_c("glove.6B.", n_embeddings, "d.txt")),
   delim = " ",
-  quote = "", # Default quote = "\"" was stopping import at the term ".
+  quote = "", # Default quote = "\"" was stopping import at the term """.
   col_names = c("word", str_c("emb", 1:n_embeddings))
 )
 
@@ -42,41 +49,28 @@ word_embeddings
 
 # Topic Modeling with Word Counts -----------------------------------------
 # Create a document-term matrix.
-dtm <- word_tokens %>%
-  count(word, id) %>%
+dtm <- word_tokens |>
+  count(word, id) |>
   cast_dtm(id, word, n)
 
-
-
-# Fit a topic model.
-set.seed(42)
-fit_lda2 <- dtm |> 
-  LDA(k = 2, method = "Gibbs")
-
-# Will we run into the same long vector error?
-
-
 # Tune k.
-tune_lda <- tibble(num_topics = 2:20) %>%
-  mutate(
-    fit_lda = pmap(
-      list(k = num_topics),
-      LDA,
-      x = dtm, method = "Gibbs"
-    ),
-    model_fit = map(fit_lda, logLik) %>% as.numeric()
-  )
-
-# FOR LOOP?
-
-ggplot(tune_lda, aes(x = num_topics, y = model_fit)) +
-  geom_point() +
-  geom_line()
-
-# Visualize the best-fitting topic model.
 set.seed(42)
-fit_lda <- dtm %>%
-  LDA(k = 2, method = "Gibbs")
+lda_tune <- tibble(k = 2:101, fit = NA)
+for (k in 1:length(lda_tune$k)) {
+  lda_fit <- LDA(x = dtm, k = lda_tune$k[k], method = "Gibbs")
+  lda_tune$fit[k] <- logLik(lda_fit) |> as.numeric()
+}
+
+ggplot(lda_tune, aes(x = k, y = fit)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "LDA Elbow Plot")
+
+ggsave(here::here("figures", "clustering-lda_tune.png"), width = 8, height = 5, units = "in")
+
+# Summarize the best-fitting topic model.
+set.seed(42)
+lda_fit <- LDA(x = dtm, k = 25, method = "Gibbs")
 
 fit_lda %>%
   tidy(matrix = "beta") %>%
@@ -90,45 +84,41 @@ fit_lda %>%
   scale_y_reordered()
 
 # Clustering on Pre-Trained Word Embeddings -------------------------------
-
-# Fit a k-means model.
-set.seed(42)
-fit_km2 <- word_embeddings |> 
-  select(-word) |> 
-  sample_n(size = 100000) |> 
-  # as.data.frame() |> 
-  kmeans(centers = 2)
-
-# Error in do_one(nmeth) : long vectors (argument 1) are not supported in .Fortran
-# OR R crashes...1000 rows works, 10000 rows works, 100000 rows ___
+# Select the clustering variables.
+km_data <- word_embeddings |> select(-word)
 
 # Tune k.
-tune_km <- tibble(k = 1:10) |>
-  mutate(
-    fit_km = pmap(list(centers = k), kmeans, x = word_embeddings[,2:(n_embeddings + 1)]),
-    augment_data = map(fit_km, augment, data = word_embeddings[,2:(n_embeddings + 1)])
-  ) |> 
-  unnest(augment_data)
+set.seed(42)
+km_tune <- tibble(k = 1:100, fit = NA)
+for (k in 1:length(km_tune$k)) {
+  km_fit <- kmeans(km_data, centers = k, iter.max = 100)
+  km_tune$fit[k] <- glance(km_fit)$tot.withinss
+}
 
-# # Select the clustering variables.
-# sim_obs <- sim_data |> 
-#   select(x, y)
-# 
-# # Tune k.
-# set.seed(42)
-# fit_tune <- tibble(k = 1:10) |>
-#   mutate(
-#     fit_km = pmap(list(centers = k), kmeans, x = sim_obs),
-#     model_fit = map(fit_km, glance)
-#   ) |> 
-#   unnest(model_fit)
+ggplot(km_tune, aes(x = k, y = fit)) +
+  geom_point() +
+  geom_line() +
+  labs(title = "K-Means Elbow Plot")
 
-ggplot(tune_km, aes(x = x, y = y)) +
-  geom_point(aes(color = .cluster), alpha = 0.5) + 
-  facet_wrap(~ k)
+ggsave(here::here("figures", "clustering-km_tune.png"), width = 8, height = 5, units = "in")
 
 # Summarize the best-fitting clustering algorithm.
 
+# Append cluster assignments.
+roomba_survey <- roomba_survey  |> 
+  mutate(.cluster_hc = cutree(fit_hc, k = 4))
+
+# Create a cluster profile.
+roomba_survey |> 
+  group_by(.cluster_hc) |> 
+  summarize(
+    n = n(),
+    clean_house = mean(CleaningAttitudes_1),
+    pet_hair_worry = mean(CleaningAttitudes_3),
+    germ_worry = mean(CleaningAttitudes_5),
+    dislike_cleaning = mean(CleaningAttitudes_9),
+    female = mean(D1Gender == 1)
+  )
 
 # Affinity Propagation on Pre-Trained Word Embeddings ---------------------
 
