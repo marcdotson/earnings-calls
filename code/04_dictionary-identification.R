@@ -72,12 +72,12 @@ ggsave(here::here("figures", "clustering-lda_tune.png"), width = 8, height = 5, 
 set.seed(42)
 lda_fit <- LDA(x = dtm, k = 25, method = "Gibbs")
 
-fit_lda %>%
-  tidy(matrix = "beta") %>%
-  group_by(topic) %>%
-  top_n(10, beta) %>%
-  ungroup() %>%
-  mutate(term = reorder_within(term, beta, topic)) %>%
+lda_fit |>
+  tidy(matrix = "beta") |>
+  group_by(topic) |>
+  top_n(10, beta) |>
+  ungroup() |>
+  mutate(term = reorder_within(term, beta, topic)) |>
   ggplot(aes(x = beta, y = term, fill = as.factor(topic))) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~ topic, scales = "free") +
@@ -103,22 +103,19 @@ ggplot(km_tune, aes(x = k, y = fit)) +
 ggsave(here::here("figures", "clustering-km_tune.png"), width = 8, height = 5, units = "in")
 
 # Summarize the best-fitting clustering algorithm.
+set.seed(42)
+km_fit <- kmeans(km_data, centers = 25, iter.max = 100)
+km_data <- augment(km_fit, word_embeddings)
 
-# Append cluster assignments.
-roomba_survey <- roomba_survey  |> 
-  mutate(.cluster_hc = cutree(fit_hc, k = 4))
-
-# Create a cluster profile.
-roomba_survey |> 
-  group_by(.cluster_hc) |> 
-  summarize(
-    n = n(),
-    clean_house = mean(CleaningAttitudes_1),
-    pet_hair_worry = mean(CleaningAttitudes_3),
-    germ_worry = mean(CleaningAttitudes_5),
-    dislike_cleaning = mean(CleaningAttitudes_9),
-    female = mean(D1Gender == 1)
-  )
+km_data |>
+  # group_by(.cluster) |>
+  # top_n(10, beta) |>
+  # ungroup() |>
+  # mutate(term = reorder_within(term, beta, topic)) |>
+  ggplot(aes(x = beta, y = term, fill = as.factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
 
 # Affinity Propagation on Pre-Trained Word Embeddings ---------------------
 
