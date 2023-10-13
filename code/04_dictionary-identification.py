@@ -1,138 +1,173 @@
-# Import libraries and functions.
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-
-from gensim.models import Word2Vec, KeyedVectors
-from gensim.scripts.glove2word2vec import glove2word2vec
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-
-import matplotlib.pyplot as plt
-import numpy as np
-
+# Import libraries
 import pandas as pd
+from kneed import KneeLocator
+from sklearn.cluster import MiniBatchKMeans
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import MiniBatchKMeans
+from sklearn.manifold import TSNE
+
 import warnings
+
+# Ignore all warnings
 warnings.filterwarnings("ignore")
 
-# Let's define two different simple corpora for customer feedback
-corpus_1 = [
-    "The product quality was great",
-    "Shipping was very fast",
-    "Customer service was not helpful",
-    "Loved the product",
-    "Shipping was slow",
-    "Excellent customer service",
-    "Product quality was poor",
-    "Fast shipping",
-    "Customer service could be better",
-    "Very happy with the product"
-]
+# Reading the file into a pandas dataframe
+df = pd.read_csv("data/word_tokens_sample.txt", sep=" ", names=["id", "word"])
 
-# Define the text cleaning function
-def clean_text(text):
-    # Case folding
-    text = text.lower()
-    
-    # Tokenization
-    words = nltk.word_tokenize(text)
-    
-    # Stopwords removal
-    stop_words = stopwords.words('english')
-    words = [word for word in words if word not in stop_words]
-    
-    # Lemmatization
-    lemmatizer = WordNetLemmatizer()
-    words = [lemmatizer.lemmatize(word) for word in words]
-    
-    return words
+# Removing the redundant header row
+df = df[df["id"] != "id"]
 
-tokens = [clean_text(doc) for doc in corpus_1]
+# Resetting the index
+df.reset_index(drop=True, inplace=True)
 
-corpus_1 # List of strings.
-tokens   # List of list of tokens.
+# Displaying the first few rows of the dataframe
+df.head() 
 
-# WHAT IS THIS?
-# %%time
+# Reading the GloVe embeddings file and extracting word-to-embedding mappings
+embeddings_dict = {}
 
-# WHY CONVERT GLOVE INTO WORD2VEC?
-# If we have the GloVe model downloaded and we'll convert Glove vectors in text format into the word2vec text format:
-glove_input_file = '/Users/marcdotson/Box Sync/4 Exploring Marketing Term Usage in Earnings Calls/data/glove/glove.6B.50d.txt'
+with open("data/glove/glove.6B.50d.txt", "r") as file:
+    for line in file:
+        values = line.split()
+        word = values[0]
+        vector = list(map(float, values[1:]))
+        embeddings_dict[word] = vector
 
-word2vec_output_file = '/Users/marcdotson/Box Sync/4 Exploring Marketing Term Usage in Earnings Calls/data/glove/glove.6B.50d.txt.word2vec'
-glove2word2vec(glove_input_file, word2vec_output_file)
+# Checking the first few entries in the embeddings_dict
+list(embeddings_dict.items())[:5]
 
-# load the converted model
-model_glove = KeyedVectors.load_word2vec_format(word2vec_output_file, binary=False)
+# Mapping the words in the dataframe to their corresponding embeddings
+df['embedding'] = df['word'].map(embeddings_dict)
 
-def average_word_vectors(words, model, vocabulary, num_features):
-    feature_vector = np.zeros((num_features,),dtype="float64") # initialize feature_vectors of num_features length as 0s
-    nwords = 0.
-    
-    for word in words:
-        if word in vocabulary: 
-            nwords = nwords + 1.
-            feature_vector = np.add(feature_vector, model[word]) # add up the feature vectors for each word in vocab
-    
-    if nwords:
-        feature_vector = np.divide(feature_vector, nwords) # compute the average vector
-        
-    return feature_vector
+# Dropping rows where there is no corresponding embedding
+df_embeddings = df.dropna(subset=['embedding'])
 
-def averaged_word_vectorizer(corpus, model, num_features):
-    if isinstance(model, Word2Vec):
-        vocabulary = set(model.wv.index_to_key)
-        features = [average_word_vectors(tokenized_sentence, model.wv, vocabulary, num_features)
-                        for tokenized_sentence in corpus]
-    else:  # this part is for GloVe model, which is loaded as KeyedVectors
-        vocabulary = set(model.index_to_key)
-        features = [average_word_vectors(tokenized_sentence, model, vocabulary, num_features)
-                        for tokenized_sentence in corpus] # computes the averge vectors for each document, returns array
+# Checking the number of words successfully mapped to embeddings
+len(df_embeddings)
 
-    return np.array(features)
+################################################
+# 974552 words via R, 985960 words via Python?
+################################################
 
-# Get document level embeddings
-glove_feature_array = averaged_word_vectorizer(corpus=tokens, model=model_glove, num_features=50)
+# Creating the word_to_vec dictionary from the dataframe
+word_to_vec = dict(zip(df_embeddings['word'], df_embeddings['embedding']))
 
-glove_feature_array.shape
+# Extracting the embeddings for clustering
+embeddings_matrix = list(word_to_vec.values())
 
-# Building TF-IDF matrix
-vectorizer = TfidfVectorizer()
-X_tfidf = vectorizer.fit_transform(corpus_1)
+# Running the fast k-means clustering (MiniBatchKMeans) and timing the execution
+start_time = time.time()
 
-X_tfidf.shape
+kmeans = MiniBatchKMeans(n_clusters=3, random_state=0, batch_size=1000).fit(embeddings_matrix)
 
-# Now, we will perform KMeans clustering
-kmeans_glove = KMeans(n_clusters=3, random_state=42).fit(glove_feature_array)
-kmeans_tfidf = KMeans(n_clusters=3, random_state=42).fit(X_tfidf)
+end_time = time.time()
 
-# Function to plot PCA 
-def plot_pca(data, labels, model_name):
-    pca = PCA(n_components=2)
-    scatter_plot_points = pca.fit_transform(data)
+# Calculating the time taken
+time_taken = end_time - start_time
+time_taken
 
-    colors = ["red", "blue", "green"]
+################################################
+# Mini Batch: https://scikit-learn.org/stable/modules/clustering.html#mini-batch-kmeans
+################################################
 
-    plt.scatter(scatter_plot_points[:, 0], scatter_plot_points[:, 1], c=[colors[i] for i in labels])
+# Define the range of k values to test
+k_values = range(2, 30)
+inertias = []
 
-    # add labels
-    for i, label in enumerate(labels):
-        plt.text(scatter_plot_points[i, 0], scatter_plot_points[i, 1], str(i))
+# Run MiniBatchKMeans for each k
+for k in k_values:
+    kmeans = MiniBatchKMeans(n_clusters=k, random_state=0, batch_size=1000).fit(embeddings_matrix)
+    inertias.append(kmeans.inertia_)
 
-    plt.title('PCA plot for '+ model_name)
-    plt.show()
+# Plot the results on an elbow plot
+plt.figure(figsize=(10, 6))
+plt.plot(k_values, inertias, 'o-')
+plt.xlabel('Number of clusters (k)')
+plt.ylabel('Inertia (Sum of Squared Distances)')
+plt.title('Elbow Plot for Optimal k')
+plt.grid(True)
+plt.show()
 
-# Plotting PCA plots
-plot_pca(glove_feature_array, kmeans_glove.labels_, 'GloVe')
-plot_pca(X_tfidf.toarray(), kmeans_tfidf.labels_, 'TF-IDF')
+kn = KneeLocator(k_values, inertias, curve='convex', direction='decreasing')
+elbow_point = kn.knee
+elbow_point
 
-# Convert corpus to a DataFrame
-df = pd.DataFrame(corpus_1, columns=['text'])
+################################################
+# KneeLocator: https://scikit-learn.org/stable/modules/clustering.html#mini-batch-kmeans
+################################################
 
-# Add KMeans cluster labels
-df['cluster_glove'] = kmeans_glove.labels_
-df['cluster_tfidf'] = kmeans_tfidf.labels_
+kmeans = MiniBatchKMeans(n_clusters=12, random_state=0, batch_size=1000).fit(embeddings_matrix)
 
-df
+# Ensure your embeddings matrix is a NumPy array
+embeddings_matrix_np = np.array(embeddings_matrix)
+
+# Using t-SNE for dimensionality reduction to 2D
+embeddings_2d = TSNE(n_components=2, random_state=0).fit_transform(embeddings_matrix_np[:10000])  # Limiting to first 10,000 samples for speed
+
+# Getting the cluster labels for the points we're visualizing
+labels = kmeans.predict(embeddings_matrix[:10000])
+
+# Plotting the clusters
+plt.figure(figsize=(10, 8))
+scatter = plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=labels, cmap='viridis', alpha=0.5)
+plt.title("Clusters of Word Embeddings (via t-SNE)")
+plt.xlabel("t-SNE Dimension 1")
+plt.ylabel("t-SNE Dimension 2")
+plt.colorbar(scatter)
+plt.show()
+
+# Assuming words is a list of your words corresponding to embeddings_matrix_np
+words = list(word_to_vec.keys())
+
+# Number of top words per cluster to display
+top_n = 10
+
+# Find the top N words closest to each centroid
+for i, centroid in enumerate(kmeans.cluster_centers_):
+    distances = np.linalg.norm(embeddings_matrix_np - centroid, axis=1)
+    closest_words_idx = np.argsort(distances)[:top_n]
+    closest_words = [words[idx] for idx in closest_words_idx]
+
+    print(f"Cluster {i + 1}: {', '.join(closest_words)}")
+
+################################################
+# Top words: Based on nearness to each centroid. What about something like tf-idf?
+# ChatGPT: Just fed those terms into ChatGPT to summarize.
+################################################
+
+kmeans = MiniBatchKMeans(n_clusters=25, random_state=0, batch_size=1000).fit(embeddings_matrix)
+
+# Ensure your embeddings matrix is a NumPy array
+embeddings_matrix_np = np.array(embeddings_matrix)
+
+# Using t-SNE for dimensionality reduction to 2D
+embeddings_2d = TSNE(n_components=2, random_state=0).fit_transform(embeddings_matrix_np[:10000])  # Limiting to first 10,000 samples for speed
+
+# Getting the cluster labels for the points we're visualizing
+labels = kmeans.predict(embeddings_matrix[:10000])
+
+# Plotting the clusters
+plt.figure(figsize=(10, 8))
+scatter = plt.scatter(embeddings_2d[:, 0], embeddings_2d[:, 1], c=labels, cmap='viridis', alpha=0.5)
+plt.title("Clusters of Word Embeddings (via t-SNE)")
+plt.xlabel("t-SNE Dimension 1")
+plt.ylabel("t-SNE Dimension 2")
+plt.colorbar(scatter)
+plt.show()
+
+# Assuming words is a list of your words corresponding to embeddings_matrix_np
+words = list(word_to_vec.keys())
+
+# Number of top words per cluster to display
+top_n = 10
+
+# Find the top N words closest to each centroid
+for i, centroid in enumerate(kmeans.cluster_centers_):
+    distances = np.linalg.norm(embeddings_matrix_np - centroid, axis=1)
+    closest_words_idx = np.argsort(distances)[:top_n]
+    closest_words = [words[idx] for idx in closest_words_idx]
+
+    print(f"Cluster {i + 1}: {', '.join(closest_words)}")
 
