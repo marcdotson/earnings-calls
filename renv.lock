@@ -9,9 +9,9 @@
     ]
   },
   "Python": {
-    "Version": "3.9.6",
+    "Version": "3.11.5",
     "Type": "virtualenv",
-    "Name": "./renv/python/virtualenvs/renv-python-3.9"
+    "Name": "./renv/python/virtualenvs/renv-python-3.11"
   },
   "Packages": {
     "BH": {
@@ -57,8 +57,8 @@
       "Package": "GICS",
       "Version": "0.0.1.0",
       "Source": "GitHub",
-      "Remotes": "bautheac/finRes",
       "RemoteType": "github",
+      "Remotes": "bautheac/finRes",
       "RemoteHost": "api.github.com",
       "RemoteRepo": "GICS",
       "RemoteUsername": "bautheac",
