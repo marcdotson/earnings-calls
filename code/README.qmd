@@ -3,7 +3,7 @@ title: "Code"
 format: gfm
 ---
 
-Scripts with prefixes (e.g., `01_import-data.R`, `02_clean-data.R`) and functions in `/code/source`.
+Scripts with prefixes (e.g., `01_import-data.R`, `02_clean-data.R`) and functions in `/code/src`.
 
 - `01_data-wrangling.R` import, clean, and join the raw transcripts and financial performance data.
 - `02_tokenizing.R` tokenize and remove stop words from complete `call_data`.

@@ -1,7 +1,7 @@
 # Code
 
 Scripts with prefixes (e.g., `01_import-data.R`, `02_clean-data.R`) and
-functions in `/code/source`.
+functions in `/code/src`.
 
 - `01_data-wrangling.R` import, clean, and join the raw transcripts and
   financial performance data.

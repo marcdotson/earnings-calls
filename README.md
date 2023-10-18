@@ -21,7 +21,7 @@ consumer focused and marketing-centric companies.
 ## Project Organization
 
 - `/code` Scripts with prefixes (e.g., `01_import-data.R`,
-  `02_clean-data.R`) and functions in `/code/source`.
+  `02_clean-data.R`) and functions in `/code/src`.
 - `/data` Simulated and real data, the latter not pushed.
 - `/figures` PNG images and plots.
 - `/output` Output from model runs, not pushed.
